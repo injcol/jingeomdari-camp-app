@@ -65,12 +65,27 @@ for (let i = 0; i < misMd.length; i++) {
   if (/^##\s*활성\s*미션/.test(misMd[i])) { activeSection = true; continue; }
   if (/^##\s*예비\s*미션/.test(misMd[i])) { activeSection = false; continue; }
   const m = misMd[i].match(/^- \*\*(m_[A-Za-z0-9_]+)\*\* — (.+)$/); if (!m) continue;
-  const f = {}; for (const part of m[2].split('|')) { const k = part.indexOf(':'); if (k > -1) f[part.slice(0, k).trim()] = parseVal(part.slice(k + 1)); }
-  const brief = (misMd[i + 1] && misMd[i + 1].match(/^\s+- (.+)$/)) ? RegExp.$1.trim() : null;
-  const rec = { missionId: m[1], type: f.type, evidenceTypes: Array.isArray(f.evidenceTypes) ? f.evidenceTypes : [], requiresReservation: f.requiresReservation === 'true', outdoor: f.outdoor === 'true', fallbackMission: f.fallbackMission ?? null, answer: f.answer ?? null, active: activeSection, brief };
+  // 두 형식 지원: 활성=key:value 파이프 / 예비=<type>|[ev] | key:value — <인라인 brief>
+  let spec = m[2], inlineBrief = null;
+  const di = spec.indexOf(' — ');                       // 활성 m[2]엔 내부 em-dash 없음(검증). 예비는 brief 구분자.
+  if (di > -1) { inlineBrief = spec.slice(di + 3).trim(); spec = spec.slice(0, di); }
+  const MTYPES = ['observe_quiz', 'photo_reenact', 'interview_experience', 'reflect_share'];
+  const f = {};
+  for (let part of spec.split('|')) {
+    part = part.trim(); if (!part) continue;
+    const k = part.indexOf(':');
+    if (k > 0 && /^[A-Za-z]+$/.test(part.slice(0, k).trim())) f[part.slice(0, k).trim()] = parseVal(part.slice(k + 1));
+    else if (MTYPES.includes(part)) f.type = part;                       // 예비: 베어 type 토큰
+    else if (part.startsWith('[') && part.endsWith(']')) f.evidenceTypes = parseVal(part); // 예비: 베어 [ev]
+  }
+  const brief = inlineBrief || ((misMd[i + 1] && misMd[i + 1].match(/^\s+- (.+)$/)) ? RegExp.$1.trim() : null);
+  const rec = { missionId: m[1], type: f.type ?? null, evidenceTypes: Array.isArray(f.evidenceTypes) ? f.evidenceTypes : [], requiresReservation: f.requiresReservation === 'true', outdoor: f.outdoor === 'true', fallbackMission: f.fallbackMission ?? f.fallback ?? null, answer: f.answer ?? null, active: activeSection, brief };
   if (m[1].startsWith('m_ALL')) courseMissionsFull.push({ ...rec, scope: 'course', placeId: null });
   else { rec.placeId = m[1].replace(/^m_/, '').replace(/_\d+$/, ''); missionsFull.push(rec); }
 }
+// 가드: type은 DB NOT NULL — 누락 시 즉시 실패(서버 INSERT 23502 사전 차단)
+const _nullType = [...missionsFull, ...courseMissionsFull].filter((x) => !x.type);
+if (_nullType.length) { console.error('BUILD 실패: type 누락 미션 →', _nullType.map((x) => x.missionId).join(',')); process.exit(1); }
 
 // ── 4) courses + recommendedCourses ──
 const courses = [{ courseId: 'common', type: 'common', placeIds: [...REQUIRED] }];
