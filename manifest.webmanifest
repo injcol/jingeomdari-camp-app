@@ -1,0 +1,15 @@
+{
+  "name": "징검다리 여름캠프",
+  "short_name": "징검다리",
+  "description": "높은뜻섬기는교회 청소년부 징검다리 여름캠프 — 조별 서울 탐방 앱",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3ecdd",
+  "theme_color": "#175055",
+  "lang": "ko",
+  "icons": [
+    { "src": "assets/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any maskable" }
+  ]
+}

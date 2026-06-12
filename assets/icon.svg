@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="징검다리 아이콘">
+  <rect width="512" height="512" rx="96" fill="#175055"/>
+  <!-- 강물 -->
+  <path d="M0 360 Q140 320 256 372 T512 356 V512 H0 Z" fill="#1f6f74"/>
+  <path d="M0 408 Q160 372 268 420 T512 408 V512 H0 Z" fill="#0f3a3d"/>
+  <!-- 징검다리 돌 -->
+  <g fill="#d8c9a8">
+    <ellipse cx="130" cy="372" rx="48" ry="26"/>
+    <ellipse cx="262" cy="392" rx="54" ry="28"/>
+    <ellipse cx="392" cy="368" rx="48" ry="26"/>
+  </g>
+  <!-- 물 차오른 돌(점등) -->
+  <ellipse cx="130" cy="372" rx="48" ry="26" fill="#4f9aa0" opacity="0.55"/>
+  <!-- 등불 -->
+  <circle cx="262" cy="300" r="20" fill="#c79140"/>
+  <rect x="258" y="250" width="8" height="34" rx="4" fill="#f0e7d6"/>
+</svg>

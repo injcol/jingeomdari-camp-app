@@ -1,0 +1,687 @@
+// 라우터 + 화면 — D2 학생 플로우 정밀화.
+// 홈=진행률 징검다리(세로 serpentine 물길·점등, 가변 코스 길이 대응)+다음액션(썸존)+대기배지+빠른진입.
+// 장소상세=비대칭 매거진(풀블리드 사진 히어로·겹친 네이버 지도+접근정보·읽을거리 지면·미션 썸존·도착 체크인).
+// 플래너/인증/저널/관리자는 D3~D6.
+import { Store } from './store.js';
+import { Teacher } from './teacher.js';
+import { el, kakaoRouteUrl, naverSearchUrl, MISSION_TYPE, THEME_LABEL } from './util.js';
+import { renderMap } from './map.js';
+
+const app = () => document.getElementById('app');
+let plannerTheme = 'all';   // 코스 플래너 테마 필터(로컬 UI 상태)
+let pendingMap = null;      // 렌더 후 초기화할 네이버 지도 {lat,lng,name}
+let draft = null;           // 미션 인증 드래프트 { files[], previews[], comment, uploading, progress }
+let teacherTab = 'queue';   // 교사 관리자 탭 queue|board|consent
+let teacherData = { queue: null, board: null, consent: null, loading: false, error: null, loaded: false };
+let photoModal = null;      // 사진 상세 모달 { refs, group, label }
+let consentForm = { groupId: '', label: '', archive: false, exportOk: false }; // 동의 추가 폼
+const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placeholder(매니페스트 §6 worker2 지정). url 미확정 19곳 노출
+function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
+
+function tabbar(active) {
+  const tab = (href, ic, label, on) => el('a', { href, class: on ? 'on' : '' }, [el('span', { class: 'ic' }, ic), label]);
+  return el('nav', { class: 'tabbar' }, [
+    tab('#/', '⛰', '홈', active === 'home'),
+    tab('#/planner', '🗺', '코스', active === 'planner'),
+    tab('#/journal', '📖', '저널', active === 'journal'),
+  ]);
+}
+
+// ── 진행률 징검다리: 세로 serpentine. 완료=물 차오름·점등·✓ / 현재=점멸 링·지금여기 / 예정=흐림 ──
+function buildCrossing(course, nextId) {
+  const N = course.length;
+  const top = 46, step = 92, H = top + (N - 1) * step + 46;
+  const pts = course.map((c, i) => ({ xf: i % 2 === 0 ? 0.30 : 0.70, y: top + i * step, ...c }));
+  // SVG 물길(세로 S커브)
+  let d = `M ${pts[0].xf * 100} ${pts[0].y}`;
+  for (let i = 1; i < N; i++) {
+    const a = pts[i - 1], b = pts[i], my = (a.y + b.y) / 2;
+    d += ` C ${a.xf * 100} ${my} ${b.xf * 100} ${my} ${b.xf * 100} ${b.y}`;
+  }
+  const svg = `<svg class="river-svg" viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="var(--river-300)" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+    <path d="${d}" fill="none" stroke="var(--river-700)" stroke-width="2.5" stroke-dasharray="1 7" stroke-linecap="round" opacity="0.7"/>
+  </svg>`;
+
+  const wrap = el('div', { class: 'crossing', style: `height:${H}px` });
+  wrap.appendChild(el('div', { class: 'river-layer', html: svg }));
+  pts.forEach((p) => {
+    const place = Store.place(p.placeId); const pr = Store.progress(p.placeId);
+    const done = pr.status === 'approved'; const now = p.placeId === nextId;
+    const fill = done ? 78 : (now ? 32 : 0);
+    const stone = el('a', {
+      href: `#/place/${p.placeId}`,
+      class: `cstone ${done ? 'done' : now ? 'now' : 'future'}`,
+      style: `left:${p.xf * 100}%; top:${p.y}px`,
+    }, [
+      now ? el('span', { class: 'pin' }, '지금 여기 ▾') : null,
+      el('span', { class: 'pebble tex-stone' }, [
+        el('span', { class: 'water', style: `height:${fill}%` }),
+        el('span', { class: 'lbl' }, place ? place.name : p.placeId),
+      ]),
+    ]);
+    wrap.appendChild(stone);
+  });
+  return wrap;
+}
+
+function screenHome() {
+  const course = Store.course;
+  const nextId = Store.nextPlace();
+  const next = nextId ? Store.place(nextId) : null;
+  const pendingCount = course.filter(({ placeId }) => Store.progress(placeId).status === 'pending').length;
+
+  const nextCard = next ? el('a', { href: `#/place/${next.placeId}`, class: 'next tex-stone organic' }, [
+    el('div', { class: 'next-ic tex-water organic' }, '→'),
+    el('div', { class: 'next-body' }, [
+      el('div', { class: 'next-k' }, '다음 징검다리'),
+      el('div', { class: 'next-h display' }, next.name),
+      el('div', { class: 'next-p' }, `${THEME_LABEL[next.themeTags[0]] || ''} · 종로5가 허브 ${next.planner.routeType} ${next.planner.hubMinutes ?? '-'}분`),
+    ]),
+  ]) : el('div', { class: 'next tex-stone organic done-all' }, [el('div', { class: 'next-h display' }, '모든 징검다리를 건넜어요 🎉')]);
+
+  const children = [
+    el('div', { class: 'top' }, [
+      el('div', { class: 'stamp tex-stone organic' }, Store.group.name),
+      el('div', { class: 'meta' }, [el('b', {}, '징검다리 여름캠프'), el('br'), '높은뜻섬기는교회 청소년부']),
+    ]),
+    el('div', { class: 'h-title' }, [
+      el('div', { class: 'k' }, '오늘 우리 조의 여정'),
+      el('h1', { class: 'display' }, [`강을 건너며 `, el('em', {}, '기록하다')]),
+    ]),
+    el('div', { class: 'progress-note' }, `건넌 징검다리 ${Store.crossedCount()} · ${course.length}곳 코스 · 점수 없음`),
+    buildCrossing(course, nextId),
+    nextCard,
+  ];
+  if (pendingCount > 0) children.push(el('div', { class: 'badge organic' }, [
+    el('span', { class: 'n' }, String(pendingCount)),
+    el('span', {}, `승인 대기 ${pendingCount}건 — 교사 선생님 확인 중이에요`),
+  ]));
+  children.push(el('nav', { class: 'quick' }, [
+    el('a', { href: '#/planner', class: 'tex-stone organic q-dark' }, [el('span', { class: 'q-ic' }, '🗺'), el('span', { class: 'q-t' }, '코스 플래너'), el('span', { class: 'q-d' }, '공통 3곳 + 선택 담기')]),
+    el('a', { href: '#/journal', class: 'tex-paper organic q-light' }, [el('span', { class: 'q-ic' }, '📖'), el('span', { class: 'q-t' }, '조별 저널'), el('span', { class: 'q-d' }, '승인 사진 수록')]),
+  ]));
+  // 코스 미션(장소 비귀속) — 별도 진입
+  const cms = Store.courseMissions();
+  if (cms.length) children.push(el('section', { class: 'cm-sec' }, [
+    el('div', { class: 'cm-k' }, '우리 조 코스 미션'),
+    el('div', { class: 'cm-list' }, cms.map((m) => {
+      const tt = MISSION_TYPE[m.type] || { label: m.type, icon: '•' };
+      const sub = Store.submission(m.missionId);
+      const sm = STATUS_META[sub.status] || STATUS_META.idle;
+      return el('a', { href: `#/mission/${m.missionId}`, class: 'cm-item' }, [
+        el('span', { class: 'cm-ic' }, tt.icon),
+        el('span', { class: 'cm-b' }, [el('b', {}, tt.label), el('small', {}, m.brief || '코스 전체 미션')]),
+        el('span', { class: `cm-st ${sm.cls}` }, sub.status === 'idle' ? '인증하기' : sm.k),
+      ]);
+    })),
+  ]));
+  children.push(el('div', { class: 'grow' }));
+  children.push(el('a', { href: '#/teacher', class: 'teacher-link' }, '교사 관리자 →'));
+  children.push(tabbar('home'));
+  return el('main', { class: 'phone tex-paper col' }, children);
+}
+
+function screenPlace(id) {
+  const p = Store.place(id);
+  if (!p) return el('main', { class: 'phone tex-paper col' }, [el('div', { class: 'pad' }, '장소를 찾을 수 없습니다.'), el('a', { href: '#/', class: 'btn' }, '홈으로')]);
+  const pr = Store.progress(id);
+  const kakao = kakaoRouteUrl(p.name, p.naverMap.lat, p.naverMap.lng);
+  const naver = naverSearchUrl(p.name, p.naverMap.lat, p.naverMap.lng);
+
+  // 풀블리드 히어로: confirmed(url)만 실사진, 그 외 앱 공통 placeholder 에셋 (저작권 안전: needsFieldShoot/미확정=실사진 금지)
+  const hasPhoto = p.photo && p.photo.url;
+  const hero = el('header', { class: 'hero' }, [
+    el('div', { class: 'photo hero-photo' }, hasPhoto
+      ? [el('img', { src: p.photo.url, alt: p.name, style: 'width:100%;height:100%;object-fit:cover' })]
+      : [el('img', { src: PLACEHOLDER_PHOTO, alt: `${p.name} 실사진 준비 중`, class: 'ph-img' }),
+         el('div', { class: 'ph-tag' }, photoStatusLabel(p))]),
+    el('div', { class: 'grad' }),
+    el('a', { href: '#/', class: 'back' }, '‹'),
+    el('div', { class: 'cap' }, [
+      el('div', { class: 'k' }, Store.isRequired(id) ? '공통 필수 · 종로5가 허브' : '선택 장소'),
+      el('h1', { class: 'display' }, p.name),
+      el('div', { class: 'tags' }, p.themeTags.map((t) => el('span', { class: 'chip' }, THEME_LABEL[t] || t))),
+    ]),
+    hasPhoto ? el('div', { class: 'src' }, `📷 ${p.photo.attribution || p.photo.source || ''}`) : null,
+  ]);
+
+  // 네이버 지도(실연동) + 실패 시 placeholder fallback
+  const hasCoord = p.naverMap.lat != null && p.naverMap.lng != null;
+  const mapWrap = el('div', { class: 'map-wrap' }, [
+    el('div', { id: 'place-map', class: 'naver-map' }),
+    el('div', { class: 'mapslot map-fallback', id: 'map-fallback' }, [
+      el('span', { class: 'badge-map' }, '네이버 지도'),
+      el('span', { class: 'pin', style: 'left:50%;top:54%' }, '📍'),
+      el('div', { class: 'ph-note' }, hasCoord ? `${p.naverMap.lat}, ${p.naverMap.lng}` : '좌표 준비 중'),
+    ]),
+  ]);
+  pendingMap = hasCoord ? { lat: p.naverMap.lat, lng: p.naverMap.lng, name: p.name } : null;
+
+  // 비대칭: 지도(넓게, 위로 겹침) + 접근정보(좁게)
+  const asym = el('div', { class: 'row' }, [
+    el('div', { class: 'map-card tex-paper organic' }, [el('div', { class: 'ttl' }, '네이버 지도 · 위치'), mapWrap]),
+    el('div', { class: 'access' }, [
+      el('div', { class: 'a-item' }, [el('span', { class: 'a-ic' }, '📍'), el('span', {}, [el('b', {}, '종로5가 허브'), ` ${routeLabel(p.planner)}`])]),
+      el('div', { class: 'a-item' }, [el('span', { class: 'a-ic' }, '🏠'), el('span', {}, p.address || '주소 — Phase1 확정')]),
+      el('div', { class: 'a-item' }, [el('span', { class: 'a-ic' }, '🧭'), el('span', {}, [el('b', {}, '도착하면 직접 체크인'), ' (실시간 위치 없음)'])]),
+    ]),
+  ]);
+
+  // R2 Critical#2: 길찾기를 하단 고정 썸존 바로(가장 빈번한 액션). 한 손 조작 동선 개선.
+  const routeBar = el('div', { class: 'route-bar' }, [
+    el('span', { class: 'rb-k' }, '길찾기'),
+    el('a', { class: 'btn rb-btn', href: naver || '#', target: '_blank', rel: 'noopener' }, '네이버'),
+    el('a', { class: 'btn rb-btn', href: kakao || '#', target: '_blank', rel: 'noopener' }, '카카오맵'),
+  ]);
+
+  const rd = Store.readingFor(id);
+  const reading = el('section', { class: 'reading tex-paper' }, [
+    el('div', { class: 'k' }, '읽을거리 · 묵상'),
+    el('h2', { class: 'display' }, (rd && rd.title) || '이 자리의 이야기'),
+    ...(rd && rd.body
+      ? rd.body.split(/\n\n+/).map((par) => el('p', {}, par))
+      : [el('p', { class: 'muted' }, '[읽을거리 준비 중 — content/readings/ 연결 예정]')]),
+  ]);
+
+  const missions = el('div', { class: 'mission-wrap' }, Store.missionsOf(id).map((m) => {
+    const t = MISSION_TYPE[m.type] || { label: m.type, icon: '•' };
+    const sub = Store.submission(m.missionId);
+    return el('article', { class: 'mission-card tex-stone organic' }, [
+      el('div', { class: 'm-head' }, [
+        el('span', { class: 'm-ic tex-water organic' }, t.icon),
+        el('div', {}, [el('div', { class: 'm-k' }, `미션 · ${t.label}`), el('div', { class: 'm-brief' }, m.brief || '')]),
+      ]),
+      m.requiresReservation ? el('div', { class: 'm-note' }, '※ 사전 예약·협의 필요') : null,
+      m.fallbackMission ? el('div', { class: 'm-note' }, `↺ 대체: ${m.fallbackMission}`) : null,
+      subStatusChip(sub),
+      el('a', { class: 'btn block m-cta', href: `#/mission/${m.missionId}` },
+        sub.status === 'idle' ? '미션 인증하기' : sub.status === 'revise' ? '보완해서 다시 올리기' : '인증 상태 보기'),
+    ]);
+  }));
+
+  const checkin = el('button', { class: `checkin organic ${pr.checkedIn ? 'on' : ''}`, onclick: () => { Store.toggleCheckIn(id); render(); } }, [
+    el('div', { class: 'sw' }),
+    el('div', { class: 'txt' }, [el('b', {}, pr.checkedIn ? '도착 체크인 완료 ✓' : '여기 도착했어요 — 도착 체크인'), el('small', {}, '홈 징검다리에 현재 위치 표시 · 기록을 잊지 마세요')]),
+  ]);
+
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'scroll' }, [hero, el('div', { class: 'sheet' }, [asym, reading, missions, checkin])]),
+    routeBar,
+    tabbar(''),
+  ]);
+}
+
+function routeLabel(pl) {
+  const r = { walk: '도보', noTransfer: '무환승', '1transfer': '1환승', '2transfer': '2환승' }[pl.routeType] || pl.routeType;
+  return `${r} · 편도 약 ${pl.hubMinutes ?? '-'}분${pl.transferCount ? ` · 환승 ${pl.transferCount}` : ''}`;
+}
+function photoStatusLabel(p) {
+  return ({ confirmed: '공공누리 제1유형', placeholder: '실사진 준비 중', replace: '실사진 준비 중' })[p.photo && p.photo.status] || '준비 중';
+}
+
+// ── 화면 ④ 미션 인증 — 상태머신: idle → uploading(올림) → pending(승인 대기) → approved/revise ──
+const STATUS_META = {
+  idle: { step: 0, k: '인증 시작', cls: '' },
+  uploading: { step: 0, k: '올리는 중', cls: 'up' },
+  queued: { step: 0, k: '전송 보류(오프라인)', cls: 'queued' },
+  pending: { step: 1, k: '승인 대기', cls: 'pending' },
+  approved: { step: 2, k: '승인됨', cls: 'approved' },
+  revise: { step: 2, k: '보완요청', cls: 'revise' },
+};
+function subStatusChip(sub) {
+  if (!sub || sub.status === 'idle') return null;
+  const m = STATUS_META[sub.status] || STATUS_META.idle;
+  return el('div', { class: `m-status ${m.cls}` }, [el('span', { class: 'dot' }), `${m.k}${sub.status === 'pending' ? ' · 교사 확인 중' : ''}`]);
+}
+function stepper(status) {
+  const cur = (STATUS_META[status] || STATUS_META.idle).step;
+  const revise = status === 'revise';
+  const labels = ['올림', '승인 대기', revise ? '보완요청' : '승인됨'];
+  return el('div', { class: 'stepper' }, labels.map((lb, i) => el('div', {
+    class: `step ${i < cur ? 'done' : ''} ${i === cur ? 'on' : ''} ${i === 2 && revise ? 'revise' : ''}`,
+  }, [el('span', { class: 'sdot' }, i < cur ? '✓' : String(i + 1)), el('span', { class: 'slbl' }, lb)])));
+}
+
+function screenMission(missionId) {
+  const meta = Store.missionMeta(missionId);
+  if (!meta) return stub('미션', '미션을 찾을 수 없습니다.', '');
+  const place = meta.placeId ? Store.place(meta.placeId) : null;
+  const sub = Store.submission(missionId);
+  const t = MISSION_TYPE[meta.type] || { label: meta.type, icon: '•' };
+  const backHref = place ? `#/place/${place.placeId}` : '#/';
+  if (!draft || draft.missionId !== missionId) { resetDraft(); draft.missionId = missionId; }
+
+  // 헤더
+  const head = el('header', { class: 'mh' }, [
+    el('a', { href: backHref, class: 'mh-back' }, '‹'),
+    el('div', { class: 'mh-k' }, place ? place.name : '코스 미션'),
+    el('div', { class: 'mh-sp' }),
+  ]);
+
+  const intro = el('div', { class: 'm-intro' }, [
+    el('span', { class: 'm-ic tex-water organic' }, t.icon),
+    el('div', {}, [
+      el('div', { class: 'm-k' }, `${meta.scope === 'course' ? '코스 미션' : '미션'} · ${t.label}`),
+      el('h1', { class: 'display' }, meta.brief || '미션 인증'),
+      el('div', { class: 'ev' }, (meta.evidenceTypes || []).map((e) => el('span', { class: 'chip' }, EVIDENCE_LABEL[e] || e))),
+    ]),
+  ]);
+
+  // 본문: 상태별
+  let bodyKids;
+  if (sub.status === 'approved') {
+    bodyKids = [
+      el('div', { class: 'm-result approved' }, [
+        el('div', { class: 'r-ic' }, '✓'),
+        el('h2', { class: 'display' }, '승인되었어요'),
+        el('p', {}, place ? '홈 징검다리에 이 장소의 돌이 차오르고 불이 켜졌어요.' : '코스 미션이 승인되었어요.'),
+        thumbsRow(sub),
+        sub.comment ? el('p', { class: 'r-comment' }, `“${sub.comment}”`) : null,
+      ]),
+      el('a', { href: backHref, class: 'btn ghost block' }, '장소로 돌아가기'),
+      el('a', { href: '#/', class: 'btn block' }, '홈 징검다리 보기'),
+    ];
+  } else if (sub.status === 'pending') {
+    bodyKids = [
+      el('div', { class: 'm-result pending' }, [
+        el('div', { class: 'r-ic spin' }, '◷'),
+        el('h2', { class: 'display' }, '교사 선생님 확인 중'),
+        el('p', {}, '제출이 접수됐어요. 승인되면 홈 징검다리에 불이 켜져요. 점수는 없어요.'),
+        thumbsRow(sub),
+        sub.comment ? el('p', { class: 'r-comment' }, `“${sub.comment}”`) : null,
+      ]),
+      ...demoReviewControls(missionId),
+      el('a', { href: backHref, class: 'btn ghost block' }, '장소로 돌아가기'),
+    ];
+  } else if (sub.status === 'revise') {
+    bodyKids = [
+      el('div', { class: 'm-result revise' }, [
+        el('div', { class: 'r-ic' }, '↺'),
+        el('h2', { class: 'display' }, '보완요청'),
+        sub.teacherNote ? el('p', { class: 'tnote' }, `선생님 메모: ${sub.teacherNote}`) : el('p', {}, '사진을 다시 올려 주세요.'),
+      ]),
+      uploadForm(missionId, meta, true),
+    ];
+  } else if (sub.status === 'queued') {
+    bodyKids = [
+      el('div', { class: 'm-result queued' }, [
+        el('div', { class: 'r-ic' }, '⇅'),
+        el('h2', { class: 'display' }, '전송 보류'),
+        el('p', {}, '오프라인이라 전송을 보류했어요. 연결되면 자동으로 다시 보냅니다. (사진을 다시 선택해 주세요)'),
+      ]),
+      uploadForm(missionId, meta, true),
+    ];
+  } else {
+    bodyKids = [uploadForm(missionId, meta, false)];
+  }
+
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'scroll' }, [
+      head,
+      el('div', { class: 'sheet m-sheet' }, [intro, stepper(sub.status), ...bodyKids]),
+    ]),
+    tabbar(''),
+  ]);
+}
+
+const EVIDENCE_LABEL = { photo: '사진', group_photo: '단체사진', memo: '메모', voice: '음성', purchase: '구매인증' };
+
+function thumbsRow(sub) {
+  const n = (sub.photoRefs || []).length;
+  if (!n) return null;
+  // 영속 사진은 비공개 버킷(서명URL 필요) → 목록에선 매수만 표기. 방금 올린 미리보기는 draft에서.
+  return el('div', { class: 'thumbs' }, [el('span', { class: 'th-mark' }, `🖼 사진 ${n}장 첨부됨`)]);
+}
+
+function uploadForm(missionId, meta, isRetry) {
+  if (draft.uploading) {
+    return el('div', { class: 'up-progress' }, [
+      el('div', { class: 'up-k' }, '사진을 올리는 중…'),
+      el('div', { class: 'up-track' }, [el('div', { id: 'up-bar', class: 'up-bar', style: `width:${Math.round(draft.progress * 100)}%` })]),
+      el('button', { class: 'btn ghost block', onclick: () => cancelUpload() }, '취소'),
+    ]);
+  }
+  const previews = el('div', { class: 'previews' }, draft.previews.map((u, i) => el('div', { class: 'pv' }, [
+    el('img', { src: u, alt: '' }),
+    el('button', { class: 'pv-x', onclick: () => { URL.revokeObjectURL(u); draft.previews.splice(i, 1); draft.files.splice(i, 1); render(); } }, '×'),
+  ])));
+  const picker = el('label', { class: 'picker organic' }, [
+    el('span', { class: 'pk-ic' }, '📷'),
+    el('span', { class: 'pk-t' }, draft.files.length ? '사진 더 추가' : '사진 선택 · 촬영'),
+    el('span', { class: 'pk-d' }, '카메라/갤러리 · 여러 장 가능'),
+    el('input', {
+      type: 'file', accept: 'image/*', multiple: '', class: 'pk-input',
+      onchange: (e) => addFiles(e.target.files),
+    }),
+  ]);
+  const commentBox = el('textarea', {
+    class: 'cmt', rows: '2', placeholder: '한 줄 기록 (선택) — 무엇을 발견했나요?',
+    oninput: (e) => { draft.comment = e.target.value; },
+  });
+  commentBox.value = draft.comment;
+  const can = draft.files.length > 0;
+  return el('div', { class: 'up-form' }, [
+    draft.files.length ? previews : el('div', { class: 'up-empty' }, '아직 올린 사진이 없어요.'),
+    picker,
+    commentBox,
+    el('button', { class: `btn block submit ${can ? '' : 'off'}`, disabled: can ? null : '', onclick: () => doSubmit(missionId) }, isRetry ? '다시 제출하기' : '제출하기'),
+    Store.localMode() ? el('div', { class: 'mode-note' }, '※ 로컬 미리보기 모드 — 실제 업로드/저장은 조 코드 입장 + 온라인에서 작동합니다.') : null,
+  ]);
+}
+
+function addFiles(fileList) {
+  for (const f of fileList) { draft.files.push(f); draft.previews.push(URL.createObjectURL(f)); }
+  render();
+}
+let activeUpload = null;
+function cancelUpload() {
+  if (activeUpload && activeUpload.handle && activeUpload.handle.xhr) try { activeUpload.handle.xhr.abort(); } catch {}
+  draft.uploading = false; activeUpload = null; render();
+}
+async function doSubmit(missionId) {
+  if (!draft.files.length) return;
+  draft.uploading = true; draft.progress = 0; render();
+  try {
+    await Store.submitMission(missionId, {
+      files: draft.files, comment: draft.comment,
+      onProgress: (p) => { draft.progress = p; const bar = document.getElementById('up-bar'); if (bar) bar.style.width = `${Math.round(p * 100)}%`; },
+    });
+    draft.uploading = false; resetDraft(); render();
+  } catch (e) {
+    draft.uploading = false; render();    // queued/실패 상태는 store가 기록 → 화면 갱신
+  }
+}
+// (데모) 로컬모드에서 교사 승인/보완 미리보기 — 상태머신 UI 확인용. production엔 미표시.
+function demoReviewControls(missionId) {
+  if (!Store.localMode()) return [];
+  return [el('div', { class: 'demo-rev' }, [
+    el('span', { class: 'dr-k' }, '데모: 교사 검토 미리보기'),
+    el('button', { class: 'mini', onclick: () => { Store.demoReview(missionId, 'approved'); render(); } }, '승인'),
+    el('button', { class: 'mini del', onclick: () => { Store.demoReview(missionId, 'revise', '사진에 안내판이 잘 보이게 다시 찍어볼까요?'); render(); } }, '보완요청'),
+  ])];
+}
+
+// ── 화면 ⑥ 교사 관리자 — 코드 게이트 · 승인 큐 · 조별 현황 보드 · 동의 관리 ──
+async function loadTeacher() {
+  teacherData.loading = true; teacherData.error = null; render();
+  try {
+    const [queue, board, consent] = await Promise.all([Teacher.queue(), Teacher.board(), Teacher.consentList()]);
+    teacherData = { queue, board, consent, loading: false, error: null, loaded: true };
+  } catch (e) {
+    teacherData = { ...teacherData, loading: false, error: String(e.message || e), loaded: true };
+    if (/invalid_teacher_code/.test(teacherData.error)) Teacher.clear();  // 코드 오류 → 게이트로
+  }
+  render();
+}
+async function teacherAct(fn) { try { await fn(); } catch (e) { teacherData.error = String(e.message || e); } await loadTeacher(); }
+
+function screenTeacher() {
+  if (!Teacher.code) return teacherGate();
+  if (!teacherData.loaded && !teacherData.loading) { loadTeacher(); }  // 최초 진입 시 로드
+  teacherTab = (location.hash.match(/^#\/teacher\/(\w+)/) || [])[1] || 'queue';  // 해시 연동 탭(딥링크)
+
+  const tabs = el('div', { class: 't-tabs' }, [
+    ['queue', '승인 큐'], ['board', '조별 현황'], ['consent', '동의 관리'],
+  ].map(([k, label]) => {
+    const n = k === 'queue' && teacherData.queue ? teacherData.queue.length : null;
+    return el('button', { class: `t-tab ${teacherTab === k ? 'on' : ''}`, onclick: () => { location.hash = k === 'queue' ? '#/teacher' : `#/teacher/${k}`; } },
+      [label, n ? el('span', { class: 't-badge' }, String(n)) : null]);
+  }));
+
+  let content;
+  if (teacherData.loading && !teacherData.queue) content = el('div', { class: 't-skel' }, '불러오는 중…');
+  else if (teacherTab === 'queue') content = teacherQueue();
+  else if (teacherTab === 'board') content = teacherBoard();
+  else content = teacherConsent();
+
+  const errBar = teacherData.error && !/invalid_teacher_code/.test(teacherData.error)
+    ? el('div', { class: 't-err' }, [`오류: ${teacherData.error}`, el('button', { class: 'mini', onclick: () => loadTeacher() }, '다시')])
+    : null;
+
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('header', { class: 't-head' }, [
+      el('div', {}, [el('div', { class: 't-k' }, '교사 관리자'), el('h1', { class: 'display' }, '인증 검토 · 현황')]),
+      el('button', { class: 'mini', onclick: () => { Teacher.clear(); teacherData = { queue: null, board: null, consent: null, loading: false, error: null, loaded: false }; render(); } }, '나가기'),
+    ]),
+    tabs, errBar,
+    el('div', { class: 'scroll t-body' }, [content]),
+    photoModal ? photoModalEl() : null,
+  ]);
+}
+
+function teacherGate() {
+  let code = '';
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 't-gate' }, [
+      el('div', { class: 'tg-ic tex-water organic' }, '🔑'),
+      el('h1', { class: 'display' }, '교사 관리자'),
+      el('p', { class: 'muted' }, '교사 코드를 입력하세요. 학생 화면과 분리된 검토·승인 영역입니다.'),
+      el('input', { class: 'tg-input', type: 'password', placeholder: '교사 코드', inputmode: 'text', oninput: (e) => { code = e.target.value; } }),
+      teacherData.error === 'invalid_teacher_code' || /invalid_teacher_code|empty_code/.test(teacherData.error || '')
+        ? el('div', { class: 'tg-err' }, '코드가 올바르지 않습니다.') : null,
+      el('button', { class: 'btn block', onclick: async () => {
+        try { await Teacher.verify(code); teacherData.error = null; loadTeacher(); }
+        catch (e) { teacherData.error = String(e.message || e); render(); }
+      } }, '입장'),
+      Teacher.localMode() ? el('div', { class: 'mode-note' }, '※ 로컬 데모 — 아무 코드나 입장(데모 데이터). 실제 검증은 교사 코드 + 온라인.') : null,
+      el('a', { href: '#/', class: 'tg-back' }, '← 학생 화면으로'),
+    ]),
+  ]);
+}
+
+function fmtAgo(iso) {
+  if (!iso) return '';
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return '방금'; if (min < 60) return `${min}분 전`;
+  const h = Math.round(min / 60); return h < 24 ? `${h}시간 전` : `${Math.round(h / 24)}일 전`;
+}
+
+function teacherQueue() {
+  const q = teacherData.queue || [];
+  if (!q.length) return el('div', { class: 't-empty' }, [el('div', { class: 'te-ic' }, '✓'), el('p', {}, '대기 중인 인증이 없어요.')]);
+  return el('div', { class: 't-queue' }, q.map((s) => {
+    const where = s.mission_scope === 'course' ? '코스 미션' : Teacher.placeName(s.place_id);
+    const n = (s.photo_refs || []).length;
+    return el('article', { class: 't-card' }, [
+      el('div', { class: 'tc-top' }, [
+        el('span', { class: 'tc-grp' }, s.group_name),
+        el('span', { class: 'tc-where' }, where),
+        el('span', { class: 'tc-time' }, fmtAgo(s.created_at)),
+      ]),
+      el('div', { class: 'tc-mission' }, Teacher.missionLabel(s.mission_id)),
+      el('button', { class: 'tc-thumbs', onclick: () => { photoModal = { refs: s.photo_refs || [], group: s.group_name, label: where }; render(); } },
+        [el('span', { class: 'tt-ic' }, '🖼'), `사진 ${n}장 보기`]),
+      s.comment ? el('div', { class: 'tc-comment' }, `“${s.comment}”`) : null,
+      // R2 Critical#1: 승인=대형 단독 1차 액션(48px+), 보완·숨김은 물리적으로 분리된 하단 행
+      el('button', { class: 'btn tc-ok', onclick: () => teacherAct(() => Teacher.review(s.submission_id, 'approved', null)) }, '✓ 승인'),
+      el('div', { class: 'tc-acts2' }, [
+        el('button', { class: 'btn ghost tc-rev', onclick: () => {
+          const note = prompt('보완요청 메모(학생에게 표시):', '');
+          if (note !== null) teacherAct(() => Teacher.review(s.submission_id, 'revise', note));
+        } }, '보완요청'),
+        el('button', { class: 'tc-hide', onclick: () => { if (confirm('이 사진을 숨길까요? (큐·저널에서 제외)')) teacherAct(() => Teacher.hide(s.submission_id, true)); } }, '숨김'),
+      ]),
+    ]);
+  }));
+}
+
+function teacherBoard() {
+  const b = teacherData.board || [];
+  return el('div', { class: 't-board' }, b.map((g) => {
+    const total = g.total_places || 0, done = g.approved_count || 0;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const stale = (g.pending_count || 0) > 0 && (!g.last_activity || (Date.now() - new Date(g.last_activity).getTime()) > 45 * 60000);
+    return el('div', { class: `tb-row ${stale ? 'stale' : ''}` }, [
+      el('div', { class: 'tb-head' }, [
+        el('span', { class: 'tb-dot', style: `background:${g.color || 'var(--river-500)'}` }),
+        el('b', {}, g.group_name),
+        el('span', { class: 'tb-meta' }, `건넌 돌 ${done}/${total} · 체크인 ${g.checked_in_count || 0}`),
+      ]),
+      el('div', { class: 'tb-track' }, [el('div', { class: 'tb-fill', style: `width:${pct}%; background:${g.color || 'var(--river-500)'}` })]),
+      el('div', { class: 'tb-foot' }, [
+        (g.pending_count || 0) > 0 ? el('span', { class: 'tb-pend' }, `승인 대기 ${g.pending_count}`) : el('span', { class: 'tb-clear' }, '대기 없음'),
+        el('span', { class: 'tb-act' }, g.last_activity ? `최근 ${fmtAgo(g.last_activity)}` : '활동 없음'),
+        stale ? el('span', { class: 'tb-stale' }, '⚠ 정체') : null,
+      ]),
+    ]);
+  }));
+}
+
+function teacherConsent() {
+  const list = teacherData.consent || [];
+  const groups = Teacher.groups();
+  const rows = el('div', { class: 't-consent' }, list.map((c) => el('div', { class: `cs-row ${c.deletion_requested_at ? 'del' : ''}` }, [
+    el('div', { class: 'cs-info' }, [el('b', {}, c.student_label), el('small', {}, c.group_name)]),
+    el('div', { class: 'cs-toggles' }, [
+      consentToggle('보관', c.consent_archive, () => teacherAct(() => Teacher.setConsent(c.group_id, c.student_label, !c.consent_archive, c.consent_export, '교사'))),
+      consentToggle('내보내기', c.consent_export, () => teacherAct(() => Teacher.setConsent(c.group_id, c.student_label, c.consent_archive, !c.consent_export, '교사'))),
+      c.deletion_requested_at
+        ? el('span', { class: 'cs-deltag' }, '삭제요청됨')
+        : el('button', { class: 'mini del', onclick: () => { if (confirm(`${c.student_label}의 사진 삭제를 요청할까요?`)) teacherAct(() => Teacher.requestDeletion(c.consent_id)); } }, '삭제요청'),
+    ]),
+  ])));
+  // 추가 폼
+  const addForm = el('div', { class: 'cs-add' }, [
+    el('div', { class: 'cs-add-k' }, '동의 기록 추가/수정'),
+    el('select', { class: 'cs-sel', onchange: (e) => { consentForm.groupId = e.target.value; } },
+      [el('option', { value: '' }, '조 선택'), ...groups.map((g) => el('option', { value: g.id }, g.name))]),
+    el('input', { class: 'cs-name', placeholder: '학생 표시명(이니셜)', oninput: (e) => { consentForm.label = e.target.value; } }),
+    el('div', { class: 'cs-add-tg' }, [
+      consentToggle('보관', consentForm.archive, () => { consentForm.archive = !consentForm.archive; render(); }),
+      consentToggle('내보내기', consentForm.exportOk, () => { consentForm.exportOk = !consentForm.exportOk; render(); }),
+    ]),
+    el('button', { class: 'btn block', onclick: () => {
+      if (!consentForm.groupId || !consentForm.label.trim()) { alert('조와 학생 표시명을 입력하세요.'); return; }
+      teacherAct(() => Teacher.setConsent(consentForm.groupId, consentForm.label.trim(), consentForm.archive, consentForm.exportOk, '교사'));
+      consentForm = { groupId: '', label: '', archive: false, exportOk: false };
+    } }, '저장'),
+  ]);
+  return el('div', {}, [
+    el('p', { class: 'cs-note' }, '학부모 동의: 보관(캠프 후 아카이브) · 내보내기(외부 공유). 내보내기 동의 + 삭제요청 없음 인 사진만 저널 외부공유 대상.'),
+    list.length ? rows : el('div', { class: 't-empty' }, [el('p', {}, '아직 기록된 동의가 없어요.')]),
+    addForm,
+  ]);
+}
+function consentToggle(label, on, onClick) {
+  return el('button', { class: `cs-tg ${on ? 'on' : ''}`, onclick: onClick }, [el('span', { class: 'cs-box' }, on ? '✓' : ''), label]);
+}
+
+function photoModalEl() {
+  const m = photoModal;
+  const n = m.refs.length;
+  return el('div', { class: 'pm-scrim', onclick: (e) => { if (e.target.classList.contains('pm-scrim')) { photoModal = null; render(); } } }, [
+    el('div', { class: 'pm-box' }, [
+      el('div', { class: 'pm-head' }, [el('b', {}, `${m.group} · ${m.label}`), el('button', { class: 'pm-x', onclick: () => { photoModal = null; render(); } }, '×')]),
+      el('div', { class: 'pm-photos' }, n
+        ? m.refs.map((p, i) => el('div', { class: 'pm-ph' }, [el('span', { class: 'pm-ph-ic' }, '🖼'), el('small', {}, `사진 ${i + 1}`)]))
+        : [el('div', { class: 'pm-empty' }, '첨부 사진 없음')]),
+      el('div', { class: 'pm-note' }, Teacher.localMode()
+        ? '※ 로컬 데모 — 실제 원본은 비공개 버킷의 만료형 서명 URL로 표시(키 세션 후 production).'
+        : '비공개 버킷 · 만료형 서명 URL로 표시됩니다.'),
+    ]),
+  ]);
+}
+// ── D3 코스 플래너 — 공통 3 고정 + 선택 17 담기·순서·합산 + 추천 예시 (조별 자율 계획) ──
+const ROUTE_ICON = { walk: '🚶 도보', noTransfer: '🚈 무환승', '1transfer': '🔁 1환승', '2transfer': '🔁 2환승' };
+const THEME_FILTERS = [['all', '전체'], ['faith', '신앙'], ['history', '역사'], ['neighbor', '이웃'], ['ecology', '생태'], ['fun', '흥미']];
+
+function screenPlanner() {
+  const course = Store.course;
+  const t = Store.totals();
+  const overloaded = t.hub + t.stay > 360;
+
+  // 내 코스(순서 행): 공통필수=잠금, 선택=↑↓·제거
+  const rows = course.map(({ placeId }, idx) => {
+    const p = Store.place(placeId); const req = Store.isRequired(placeId);
+    return el('div', { class: `pl-row ${req ? 'req' : ''}` }, [
+      el('span', { class: 'pl-no' }, String(idx + 1)),
+      el('div', { class: 'pl-info' }, [
+        el('div', { class: 'pl-name' }, [p ? p.name : placeId, req ? el('span', { class: 'lock' }, ' 🔒 공통필수') : null]),
+        el('div', { class: 'pl-sub' }, p ? `${ROUTE_ICON[p.planner.routeType] || p.planner.routeType} · 허브 ${p.planner.hubMinutes ?? '-'}분 · 체류 ~${p.planner.stayMinutes ?? '-'}분` : ''),
+      ]),
+      el('div', { class: 'pl-ctl' }, [
+        el('button', { class: 'mini', disabled: idx === 0 ? '' : null, onclick: () => { Store.move(placeId, -1); render(); } }, '↑'),
+        el('button', { class: 'mini', disabled: idx === course.length - 1 ? '' : null, onclick: () => { Store.move(placeId, 1); render(); } }, '↓'),
+        req ? el('span', { class: 'mini ghost-lock' }, '고정') : el('button', { class: 'mini del', onclick: () => { Store.removePlace(placeId); render(); } }, '제거'),
+      ]),
+    ]);
+  });
+
+  // 추천 예시 칩
+  const recs = el('div', { class: 'rec-chips' }, Store.recommendedCourses.map((rc) =>
+    el('button', { class: 'rec-chip', onclick: () => { Store.applyRecommended(rc.id); render(); } }, [el('b', {}, rc.title), el('span', {}, ` +${rc.placeIds.length}곳`)])));
+
+  // 선택 장소 풀(17곳, 테마 필터)
+  const pool = Store.selectablePlaces().filter((p) => plannerTheme === 'all' || p.themeTags.includes(plannerTheme));
+  const filterBar = el('div', { class: 'filter-bar' }, THEME_FILTERS.map(([k, label]) =>
+    el('button', { class: `chip ${plannerTheme === k ? 'on' : ''}`, onclick: () => { plannerTheme = k; render(); } }, label)));
+  const poolGrid = el('div', { class: 'pool' }, pool.map((p) => {
+    const added = Store.inCourse(p.placeId);
+    return el('div', { class: `pcard tex-paper organic ${added ? 'added' : ''}` }, [
+      el('div', { class: 'pc-name display' }, p.name),
+      el('div', { class: 'pc-sub' }, `${ROUTE_ICON[p.planner.routeType] || ''} · 허브 ${p.planner.hubMinutes ?? '-'}분${p.indoorCooled ? ' · 냉방' : ''}`),
+      el('div', { class: 'pc-tags' }, p.themeTags.map((tg) => el('span', { class: 'chip' }, THEME_LABEL[tg] || tg))),
+      added
+        ? el('button', { class: 'btn ghost block', onclick: () => { Store.removePlace(p.placeId); render(); } }, '담음 ✓ (빼기)')
+        : el('button', { class: 'btn block', onclick: () => { Store.addPlace(p.placeId); render(); } }, '+ 담기'),
+    ]);
+  }));
+
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'scroll' }, [
+      el('div', { class: 'pl-head' }, [
+        el('h1', { class: 'display' }, '코스 플래너'),
+        el('p', { class: 'muted' }, '공통 필수 3곳은 고정, 나머지 17곳에서 우리 조가 직접 골라 순서를 정해요. (추천 예시는 참고일 뿐 자유 수정)'),
+      ]),
+      el('div', { class: 'sum-bar tex-stone organic' }, [
+        el('div', {}, [el('b', {}, `총 ${t.count}곳`), ` · 예상 이동 약 ${t.hub}분 · 체류 약 ${t.stay}분`]),
+        el('div', { class: 'sum-note' }, overloaded ? '⚠ 이동·체류가 많아요 — 폭염·시간을 고려하세요 (막지 않음)' : '대략값 · 점수 없음'),
+      ]),
+      el('h2', { class: 'sec' }, '우리 조 코스'),
+      el('div', { class: 'pl-list' }, rows),
+      el('h2', { class: 'sec' }, '추천 예시 불러오기'),
+      recs,
+      el('h2', { class: 'sec' }, '선택 장소 담기 (17곳)'),
+      filterBar,
+      pool.length ? poolGrid : el('p', { class: 'muted pad0' }, '이 테마의 남은 장소가 없어요.'),
+      el('button', { class: 'btn block start-btn', onclick: () => { location.hash = '#/'; } }, '이 코스로 시작하기'),
+    ]),
+    tabbar('planner'),
+  ]);
+}
+
+function stub(title, msg, tab) {
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'pad' }, [el('h1', { class: 'display' }, title), el('p', { class: 'muted' }, msg)]),
+    el('div', { class: 'grow' }), tabbar(tab),
+  ]);
+}
+
+function render() {
+  const h = location.hash || '#/';
+  const root = app(); root.innerHTML = '';
+  pendingMap = null;
+  const mPlace = h.match(/^#\/place\/([A-D]\d+)/);
+  const mMission = h.match(/^#\/mission\/(m_[A-Za-z0-9_]+)/);
+  if (!mMission && draft) { draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = null; }  // 미션 이탈 시 드래프트 정리
+  if (mMission) root.appendChild(screenMission(mMission[1]));
+  else if (mPlace) root.appendChild(screenPlace(mPlace[1]));
+  else if (h.startsWith('#/teacher')) root.appendChild(screenTeacher());
+  else if (h.startsWith('#/planner')) root.appendChild(screenPlanner());
+  else if (h.startsWith('#/journal')) root.appendChild(stub('조별 저널', '저널은 D6에 구현됩니다 (승인된 조 업로드 사진이 채워지는 지면).', 'journal'));
+  else root.appendChild(screenHome());
+  window.scrollTo(0, 0);
+  if (pendingMap) {
+    const m = pendingMap;
+    requestAnimationFrame(() => {
+      const c = document.getElementById('place-map'), fb = document.getElementById('map-fallback');
+      if (c) renderMap(c, fb, m.lat, m.lng, m.name).catch((e) => console.warn('[map] fallback:', e.message));
+    });
+  }
+}
+
+window.addEventListener('hashchange', render);
+// 재연결 시 승인/보완 상태 동기화(production). 로컬모드는 no-op.
+window.addEventListener('online', () => { Store.refreshStatus().then(render).catch(() => {}); });
+render();
