@@ -5,11 +5,12 @@
 import { Store } from './store.js';
 import { Teacher } from './teacher.js';
 import { el, kakaoRouteUrl, naverSearchUrl, MISSION_TYPE, THEME_LABEL, HUB } from './util.js';
-import { renderMap } from './map.js';
+import { renderMap, renderAllMap } from './map.js';
 
 const app = () => document.getElementById('app');
 let plannerTheme = 'all';   // 코스 플래너 테마 필터(로컬 UI 상태)
 let pendingMap = null;      // 렌더 후 초기화할 네이버 지도 {lat,lng,name}
+let pendingAllMap = false;   // 렌더 후 전체지도 초기화 플래그
 let draft = null;           // 미션 인증 드래프트 { files[], previews[], comment, uploading, progress }
 let teacherTab = 'queue';   // 교사 관리자 탭 queue|board|consent
 let teacherData = { queue: null, board: null, consent: null, loading: false, error: null, loaded: false };
@@ -24,6 +25,7 @@ function tabbar(active) {
   return el('nav', { class: 'tabbar' }, [
     tab('#/', '⛰', '홈', active === 'home'),
     tab('#/planner', '🗺', '코스', active === 'planner'),
+    tab('#/map', '📍', '지도', active === 'map'),
     tab('#/journal', '📖', '저널', active === 'journal'),
   ]);
 }
@@ -785,6 +787,53 @@ function screenJoin(code) {
   ])]);
 }
 
+// ── 전체지도 — 20곳 마커(허브 포함 21) 단일 네이버 지도 + 오프라인 장소 리스트 ──
+function screenAllMap() {
+  const courseIds = new Set(Store.course.map((c) => c.placeId));
+  const places = Store.seed.places;
+
+  const mapWrap = el('div', { class: 'amap-wrap' }, [
+    el('div', { id: 'all-map', class: 'naver-map' }),
+    el('div', { class: 'mapslot map-fallback', id: 'all-map-fallback' }, [
+      el('span', { class: 'badge-map' }, '네이버 지도'),
+      el('div', { class: 'ph-note' }, '지도를 불러오는 중 · 아래 목록에서 장소를 확인하세요'),
+    ]),
+  ]);
+  pendingAllMap = true;
+
+  const legend = el('div', { class: 'amap-legend' }, [
+    el('span', {}, [el('i', { class: 'lg hub' }, '🚩'), '허브']),
+    el('span', {}, [el('i', { class: 'lg course', style: `--c:${Store.group.color}` }), '우리 코스']),
+    el('span', {}, [el('i', { class: 'lg done' }, '✓'), '완료']),
+    el('span', {}, [el('i', { class: 'lg plain' }), '그 외']),
+  ]);
+
+  // 오프라인/항상 가용 장소 리스트(코스→그 외 순, 클릭 상세)
+  const sorted = [...places].sort((a, b) => (courseIds.has(b.placeId) - courseIds.has(a.placeId)));
+  const list = el('div', { class: 'amap-list' }, sorted.map((p) => {
+    const inC = courseIds.has(p.placeId); const done = Store.progress(p.placeId).status === 'approved';
+    return el('a', { href: `#/place/${p.placeId}`, class: `amap-item ${inC ? 'course' : ''}`, style: inC ? `--c:${Store.group.color}` : '' }, [
+      el('span', { class: 'ai-dot' }, done ? '✓' : ''),
+      el('span', { class: 'ai-b' }, [el('b', {}, p.name), el('small', {}, p.themeTags.map((t) => THEME_LABEL[t] || t).join(' · '))]),
+      inC ? el('span', { class: 'ai-tag' }, '우리 코스') : null,
+    ]);
+  }));
+
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'scroll' }, [
+      el('div', { class: 'pl-head' }, [
+        el('h1', { class: 'display' }, '전체 지도'),
+        el('p', { class: 'muted' }, `${HUB.short} 허브와 탐방 장소 ${places.length}곳. 마커를 누르면 장소로 이동해요.`),
+      ]),
+      el('div', { class: 'amap-card tex-paper organic' }, [mapWrap]),
+      legend,
+      el('h2', { class: 'sec' }, '장소 목록'),
+      list,
+    ]),
+    tabbar('map'),
+  ]);
+}
+
 function stub(title, msg, tab) {
   return el('main', { class: 'phone tex-paper col' }, [
     el('div', { class: 'pad' }, [el('h1', { class: 'display' }, title), el('p', { class: 'muted' }, msg)]),
@@ -795,7 +844,7 @@ function stub(title, msg, tab) {
 function render() {
   const h = location.hash || '#/';
   const root = app(); root.innerHTML = '';
-  pendingMap = null;
+  pendingMap = null; pendingAllMap = false;
   const mPlace = h.match(/^#\/place\/([A-D]\d+)/);
   const mMission = h.match(/^#\/mission\/(m_[A-Za-z0-9_]+)/);
   const mJoin = h.match(/^#\/join\/([A-Za-z0-9]+)/);
@@ -804,6 +853,7 @@ function render() {
   else if (mMission) root.appendChild(screenMission(mMission[1]));
   else if (mPlace) root.appendChild(screenPlace(mPlace[1]));
   else if (h.startsWith('#/teacher')) root.appendChild(screenTeacher());
+  else if (h.startsWith('#/map')) root.appendChild(screenAllMap());
   else if (h.startsWith('#/planner')) root.appendChild(screenPlanner());
   else if (h.startsWith('#/journal')) { root.appendChild(screenJournal()); requestAnimationFrame(() => loadJournalPhotos()); }
   else root.appendChild(screenHome());
@@ -813,6 +863,19 @@ function render() {
     requestAnimationFrame(() => {
       const c = document.getElementById('place-map'), fb = document.getElementById('map-fallback');
       if (c) renderMap(c, fb, m.lat, m.lng, m.name).catch((e) => console.warn('[map] fallback:', e.message));
+    });
+  }
+  if (pendingAllMap) {
+    requestAnimationFrame(() => {
+      const c = document.getElementById('all-map'), fb = document.getElementById('all-map-fallback');
+      if (!c) return;
+      const courseIds = new Set(Store.course.map((x) => x.placeId));
+      const items = Store.seed.places.map((p) => ({
+        id: p.placeId, name: p.name, lat: p.naverMap.lat, lng: p.naverMap.lng,
+        theme: p.themeTags.map((t) => THEME_LABEL[t] || t).join(' · '),
+        inCourse: courseIds.has(p.placeId), done: Store.progress(p.placeId).status === 'approved',
+      }));
+      renderAllMap(c, fb, items, HUB, Store.group.color).catch((e) => console.warn('[allmap] fallback:', e.message));
     });
   }
 }

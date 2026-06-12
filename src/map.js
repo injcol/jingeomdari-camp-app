@@ -1,6 +1,7 @@
 // 네이버 지도(NCP Web Dynamic Map) 로더/렌더 — 등록 referer: http://localhost:5173 (배포 도메인은 NCP 콘솔 추가)
 // 실패(키/referer 불일치·오프라인) 시 placeholder 유지(graceful degrade).
 import { NCP_CLIENT_ID } from './map_config.js';
+import { esc } from './util.js';
 
 let loadPromise = null;
 export let mapAuthOk = true;
@@ -35,6 +36,43 @@ export function renderMap(container, fallbackEl, lat, lng, name) {
     new maps.Marker({ position: pos, map, title: name || '' });
     // 레이아웃 확정 후 resize 트리거 — 0→실측 크기로 타일 재배치(보이지 않던 결함 방지)
     requestAnimationFrame(() => { try { maps.Event.trigger(map, 'resize'); } catch {} });
+    if (fallbackEl) fallbackEl.style.display = 'none';
+    return map;
+  });
+}
+
+// 전체지도: 단일 인스턴스에 허브🚩 + 장소 20곳 마커. 조 코스=조 색 강조, 완료=✓.
+// items: [{ id, name, lat, lng, theme, inCourse, done }], hub: { name, lat, lng }, color: 조 색
+export function renderAllMap(container, fallbackEl, items, hub, color) {
+  return loadNaverMaps().then((maps) => {
+    if (!container.offsetHeight) {                       // P1 패턴: 0높이 안전망
+      const h = (container.parentElement && container.parentElement.offsetHeight) || 360;
+      container.style.height = h + 'px';
+    }
+    const bounds = new maps.LatLngBounds();
+    const center = new maps.LatLng(hub.lat, hub.lng);
+    const map = new maps.Map(container, { center, zoom: 13, scaleControl: false, mapDataControl: false, logoControlOptions: { position: maps.Position.BOTTOM_LEFT } });
+    const iw = new maps.InfoWindow({ borderWidth: 0, disableAnchor: false, backgroundColor: 'transparent', pixelOffset: new maps.Point(0, -6) });
+
+    const pin = (cls, label, c) => ({ content: `<div class="mpin ${cls}" style="--c:${c}">${label}</div>`, anchor: new maps.Point(14, 14) });
+    // 허브
+    new maps.Marker({ position: center, map, icon: pin('hub', '🚩', '#175055'), title: hub.name, zIndex: 100 });
+    bounds.extend(center);
+    // 장소
+    items.forEach((it) => {
+      if (it.lat == null || it.lng == null) return;
+      const pos = new maps.LatLng(it.lat, it.lng);
+      bounds.extend(pos);
+      const cls = it.done ? 'done' : it.inCourse ? 'course' : 'plain';
+      const c = it.inCourse ? (color || '#1f6f74') : '#736a5d';
+      const mk = new maps.Marker({ position: pos, map, icon: pin(cls, it.done ? '✓' : '', c), title: it.name, zIndex: it.inCourse ? 50 : 10 });
+      maps.Event.addListener(mk, 'click', () => {
+        iw.setContent(`<div class="iw"><div class="iw-h">${esc(it.name)}</div>${it.theme ? `<div class="iw-t">${esc(it.theme)}</div>` : ''}<a class="iw-go" href="#/place/${it.id}">장소 상세 ›</a></div>`);
+        iw.open(map, mk);
+      });
+    });
+    try { map.fitBounds(bounds); } catch {}
+    requestAnimationFrame(() => { try { maps.Event.trigger(map, 'resize'); map.fitBounds(bounds); } catch {} });
     if (fallbackEl) fallbackEl.style.display = 'none';
     return map;
   });

@@ -59,11 +59,15 @@ for (const line of readFileSync(C('place_data.md'), 'utf8').split('\n')) {
 const parseVal = (v) => { v = v.trim(); if (v === 'null') return null; if (v.startsWith('[') && v.endsWith(']')) return v.slice(1, -1).split(',').map((x) => x.trim()).filter(Boolean); return v.replace(/^"|"$/g, ''); };
 const misMd = readFileSync(C('missions_final.md'), 'utf8').split('\n');
 const missionsFull = [], courseMissionsFull = [];
+// 경량화(worker1 2026-06-12): '## 활성 미션' 섹션=active, '## 예비 미션' 섹션=비활성(행 유지·삭제 금지).
+let activeSection = true;
 for (let i = 0; i < misMd.length; i++) {
+  if (/^##\s*활성\s*미션/.test(misMd[i])) { activeSection = true; continue; }
+  if (/^##\s*예비\s*미션/.test(misMd[i])) { activeSection = false; continue; }
   const m = misMd[i].match(/^- \*\*(m_[A-Za-z0-9_]+)\*\* — (.+)$/); if (!m) continue;
   const f = {}; for (const part of m[2].split('|')) { const k = part.indexOf(':'); if (k > -1) f[part.slice(0, k).trim()] = parseVal(part.slice(k + 1)); }
   const brief = (misMd[i + 1] && misMd[i + 1].match(/^\s+- (.+)$/)) ? RegExp.$1.trim() : null;
-  const rec = { missionId: m[1], type: f.type, evidenceTypes: Array.isArray(f.evidenceTypes) ? f.evidenceTypes : [], requiresReservation: f.requiresReservation === 'true', outdoor: f.outdoor === 'true', fallbackMission: f.fallbackMission ?? null, answer: f.answer ?? null, brief };
+  const rec = { missionId: m[1], type: f.type, evidenceTypes: Array.isArray(f.evidenceTypes) ? f.evidenceTypes : [], requiresReservation: f.requiresReservation === 'true', outdoor: f.outdoor === 'true', fallbackMission: f.fallbackMission ?? null, answer: f.answer ?? null, active: activeSection, brief };
   if (m[1].startsWith('m_ALL')) courseMissionsFull.push({ ...rec, scope: 'course', placeId: null });
   else { rec.placeId = m[1].replace(/^m_/, '').replace(/_\d+$/, ''); missionsFull.push(rec); }
 }
@@ -92,9 +96,10 @@ for (const fn of readdirSync(RDIR).filter((f) => f.endsWith('.md')).sort()) {
   readings.push({ readingId: g('readingId'), servedPlaceIds: served, theme: g('theme'), wordTarget: upper(g('wordTarget')), operationalNote: g('operationalNote'), title: g('title'), sourceRefs: srcRefs, body });
 }
 
-// ════════ write seed.js (클라이언트 — 정답 제외) ════════
-const clientMissions = missionsFull.map(({ answer, ...m }) => ({ ...m, hasAnswer: !!answer }));
-const clientCourseMissions = courseMissionsFull.map(({ answer, ...m }) => ({ ...m, hasAnswer: !!answer }));
+// ════════ write seed.js (클라이언트 — 정답 제외 + 활성만) ════════
+// 경량화: 클라 번들엔 활성 미션만(예비 미노출). 서버 seed_data.sql엔 전체(active 컬럼)로 행 보존.
+const clientMissions = missionsFull.filter((m) => m.active).map(({ answer, active, ...m }) => ({ ...m, hasAnswer: !!answer }));
+const clientCourseMissions = courseMissionsFull.filter((m) => m.active).map(({ answer, active, ...m }) => ({ ...m, hasAnswer: !!answer }));
 const clientReadings = readings.map(({ sourceRefs, operationalNote, wordTarget, ...r }) => r); // 본문·제목·테마·servedPlaceIds (오프라인 표시용)
 const seed = {
   meta: { generatedAt: new Date().toISOString().slice(0, 10), source: 'content/*', note: 'answer 제외(클라). 운영정보 일부 후속 보강' },
@@ -118,13 +123,13 @@ sql += `insert into course (course_id,type,place_ids) values\n`;
 sql += courses.map((c) => `(${s(c.courseId)},${s(c.type)},${arr(c.placeIds)})`).join(',\n');
 sql += `\non conflict (course_id) do update set type=excluded.type,place_ids=excluded.place_ids;\n\n`;
 
-sql += `insert into mission (mission_id,place_id,type,evidence_types,requires_reservation,outdoor,fallback_mission,answer) values\n`;
-sql += missionsFull.map((m) => `(${s(m.missionId)},${s(m.placeId)},${s(m.type)},${arr(m.evidenceTypes, 'evidence_type[]')},${b(m.requiresReservation)},${b(m.outdoor)},${s(m.fallbackMission)},${s(m.answer)})`).join(',\n');
-sql += `\non conflict (mission_id) do update set place_id=excluded.place_id,type=excluded.type,evidence_types=excluded.evidence_types,requires_reservation=excluded.requires_reservation,outdoor=excluded.outdoor,fallback_mission=excluded.fallback_mission,answer=excluded.answer;\n\n`;
+sql += `insert into mission (mission_id,place_id,type,evidence_types,requires_reservation,outdoor,fallback_mission,answer,active) values\n`;
+sql += missionsFull.map((m) => `(${s(m.missionId)},${s(m.placeId)},${s(m.type)},${arr(m.evidenceTypes, 'evidence_type[]')},${b(m.requiresReservation)},${b(m.outdoor)},${s(m.fallbackMission)},${s(m.answer)},${b(m.active)})`).join(',\n');
+sql += `\non conflict (mission_id) do update set place_id=excluded.place_id,type=excluded.type,evidence_types=excluded.evidence_types,requires_reservation=excluded.requires_reservation,outdoor=excluded.outdoor,fallback_mission=excluded.fallback_mission,answer=excluded.answer,active=excluded.active;\n\n`;
 
-sql += `insert into course_mission (mission_id,scope,type,evidence_types,requires_reservation,outdoor,fallback_mission,answer) values\n`;
-sql += courseMissionsFull.map((m) => `(${s(m.missionId)},'course',${s(m.type)},${arr(m.evidenceTypes, 'evidence_type[]')},${b(m.requiresReservation)},${b(m.outdoor)},${s(m.fallbackMission)},${s(m.answer)})`).join(',\n');
-sql += `\non conflict (mission_id) do update set type=excluded.type,evidence_types=excluded.evidence_types,requires_reservation=excluded.requires_reservation,outdoor=excluded.outdoor,fallback_mission=excluded.fallback_mission,answer=excluded.answer;\n\n`;
+sql += `insert into course_mission (mission_id,scope,type,evidence_types,requires_reservation,outdoor,fallback_mission,answer,active) values\n`;
+sql += courseMissionsFull.map((m) => `(${s(m.missionId)},'course',${s(m.type)},${arr(m.evidenceTypes, 'evidence_type[]')},${b(m.requiresReservation)},${b(m.outdoor)},${s(m.fallbackMission)},${s(m.answer)},${b(m.active)})`).join(',\n');
+sql += `\non conflict (mission_id) do update set type=excluded.type,evidence_types=excluded.evidence_types,requires_reservation=excluded.requires_reservation,outdoor=excluded.outdoor,fallback_mission=excluded.fallback_mission,answer=excluded.answer,active=excluded.active;\n\n`;
 
 sql += `insert into reading (reading_id,served_place_ids,theme,word_target,operational_note,source_ref) values\n`;
 sql += readings.map((r) => `(${s(r.readingId)},${arr(r.servedPlaceIds)},${s(r.theme)},${n(r.wordTarget)},${s(r.operationalNote)},${s(r.sourceRefs.join(' ; '))})`).join(',\n');

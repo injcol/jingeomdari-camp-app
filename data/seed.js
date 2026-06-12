@@ -696,19 +696,6 @@ export default {
       "hasAnswer": false
     },
     {
-      "missionId": "m_B11_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "캠프가 이 자리(연동교회)에서 시작하듯, \"처음 시작된 자리\"의 의미를 한 줄로",
-      "placeId": "B11",
-      "hasAnswer": false
-    },
-    {
       "missionId": "m_D5_1",
       "type": "interview_experience",
       "evidenceTypes": [
@@ -719,20 +706,6 @@ export default {
       "outdoor": false,
       "fallbackMission": "분식 메뉴판·가게 간판을 사진으로 담아 무엇을 골랐는지 기록",
       "brief": "조별 예산(예 5,000원)으로 분식 미션 + 먹방 인증샷",
-      "placeId": "D5",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_D5_2",
-      "type": "interview_experience",
-      "evidenceTypes": [
-        "voice",
-        "photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": "가게 연혁·메뉴판을 찾아 사진+메모",
-      "brief": "노포 사장님께 한 가지 질문(사전 허락·2인1조)",
       "placeId": "D5",
       "hasAnswer": false
     },
@@ -763,19 +736,6 @@ export default {
       "hasAnswer": false
     },
     {
-      "missionId": "m_C3_2",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "\"가장 약한 이웃을 위해 자기를 내어준 사람\" — 전태일과 예수를 함께 떠올리며 나누기",
-      "placeId": "C3",
-      "hasAnswer": false
-    },
-    {
       "missionId": "m_C3_3",
       "type": "photo_reenact",
       "evidenceTypes": [
@@ -802,45 +762,6 @@ export default {
       "hasAnswer": true
     },
     {
-      "missionId": "m_A7_2",
-      "type": "photo_reenact",
-      "evidenceTypes": [
-        "group_photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "벧엘예배당 외관에서 '100년 전 청년' 포즈 단체샷",
-      "placeId": "A7",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A7_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "이 교회가 시작한 일(교육·여성·청년·인권) 중 \"지금 우리가 이어갈 일\" 나누기",
-      "placeId": "A7",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_B1_1",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "전시 속 '처음'의 기록 한 가지 찾기",
-      "placeId": "B1",
-      "hasAnswer": true
-    },
-    {
       "missionId": "m_B1_2",
       "type": "photo_reenact",
       "evidenceTypes": [
@@ -854,32 +775,6 @@ export default {
       "hasAnswer": false
     },
     {
-      "missionId": "m_B1_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "선교사들이 '교육'을 선택한 이유를 우리 말로 설명",
-      "placeId": "B1",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_B2_1",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "이화학당의 '처음' 기록 찾기",
-      "placeId": "B2",
-      "hasAnswer": true
-    },
-    {
       "missionId": "m_B2_2",
       "type": "photo_reenact",
       "evidenceTypes": [
@@ -889,19 +784,6 @@ export default {
       "outdoor": false,
       "fallbackMission": null,
       "brief": "현존 가장 오래된 교사 건물(심슨기념관) 앞 조별 단체 사진",
-      "placeId": "B2",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_B2_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "'여성 교육이 처음 시작된 자리'에서 떠오른 생각 한 줄",
       "placeId": "B2",
       "hasAnswer": false
     },
@@ -929,20 +811,6 @@ export default {
       "fallbackMission": null,
       "brief": "3·1운동 독립선언서가 배포된 자리에서 조별 단체 사진",
       "placeId": "B6",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A15_1",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "photo",
-        "memo"
-      ],
-      "requiresReservation": true,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "가장 마음에 남은 한 분의 묘비 앞에서 묵념 후 한 줄 기록 (해설 사전예약)",
-      "placeId": "A15",
       "hasAnswer": false
     },
     {
@@ -985,33 +853,6 @@ export default {
       "hasAnswer": false
     },
     {
-      "missionId": "m_A3_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "voice",
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "가장 마음에 남은 한 사람 앞에서 묵념, '믿음이 행동이 된다는 것' 나누기",
-      "placeId": "A3",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A4_1",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "덕수궁·중명전의 원래 이름 / 을사늑약 관련 빈칸 퀴즈",
-      "placeId": "A4",
-      "hasAnswer": true
-    },
-    {
       "missionId": "m_A4_2",
       "type": "interview_experience",
       "evidenceTypes": [
@@ -1020,20 +861,7 @@ export default {
       "requiresReservation": false,
       "outdoor": false,
       "fallbackMission": "옥새 전시물 사진+설명",
-      "brief": "고종의 옥새를 종이에 찍어오기",
-      "placeId": "A4",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A4_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "약자가 부당하게 빼앗기는 일을 볼 때 그리스도인은? 한 문장",
+      "brief": "고종의 옥새를 종이에 찍어오기 (을사늑약의 자리 — 즉각 체험형)",
       "placeId": "A4",
       "hasAnswer": false
     },
@@ -1046,47 +874,8 @@ export default {
       "requiresReservation": false,
       "outdoor": false,
       "fallbackMission": null,
-      "brief": "전시에서 가장 인상 깊은 명연설/인물을 찾아 그 앞에서 조별 단체 사진 (※특정 전시물은 시기에 따라 변동 — '인상 깊은 한 곳'으로 일반화)",
+      "brief": "전시에서 가장 인상 깊은 명연설/인물을 찾아 그 앞에서 조별 단체 사진 (특정 전시물은 시기 변동 — '인상 깊은 한 곳'으로 일반화)",
       "placeId": "A2",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A2_2",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "\"내가 대통령이 된다면 하고 싶은 일\" 한 가지 적어 나누고 인증",
-      "placeId": "A2",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A2_3",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "전시 속 '교회/기독교가 한국 근현대사에 기여한 장면' 1가지 찾아 사진",
-      "placeId": "A2",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A10_1",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "광장의 '억울함을 호소하는 이웃' 이야기를 정중히 보고 듣고 정리",
-      "placeId": "A10",
       "hasAnswer": false
     },
     {
@@ -1098,21 +887,7 @@ export default {
       "requiresReservation": false,
       "outdoor": true,
       "fallbackMission": null,
-      "brief": "세종대왕/이순신 동상 앞 '오늘의 영웅은?' 한 컷",
-      "placeId": "A10",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A10_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "voice",
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "\"함께 울 수 있는 사람\"이 되는 것에 대해 나누기 (폭염 시 인접 A2·A8 실내 대체)",
+      "brief": "세종대왕/이순신 동상 앞 '오늘의 영웅은?' 한 컷 (폭염 시 인접 A2·A8 실내 대체)",
       "placeId": "A10",
       "hasAnswer": false
     },
@@ -1130,33 +905,6 @@ export default {
       "hasAnswer": false
     },
     {
-      "missionId": "m_A1_2",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "소녀상의 손·그림자·빈 의자 등 숨은 상징 3가지 찾아 사진+한 줄",
-      "placeId": "A1",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A1_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "voice",
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "\"우는 자와 함께 울라\" — 오늘 내가 곁을 지켜야 할 사람 나누기",
-      "placeId": "A1",
-      "hasAnswer": false
-    },
-    {
       "missionId": "m_C2_1",
       "type": "observe_quiz",
       "evidenceTypes": [
@@ -1168,19 +916,6 @@ export default {
       "brief": "이회영 6형제가 처분한 재산으로 세운 학교 이름 찾기",
       "placeId": "C2",
       "hasAnswer": true
-    },
-    {
-      "missionId": "m_C2_2",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "\"가진 것을 다 내어준 사람들\" — 나는 무엇을 나눌 수 있을지",
-      "placeId": "C2",
-      "hasAnswer": false
     },
     {
       "missionId": "m_A5_1",
@@ -1196,19 +931,6 @@ export default {
       "hasAnswer": false
     },
     {
-      "missionId": "m_A5_2",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "\"콘크리트 물길의 한계\"를 보고 생태 회복을 위한 작은 일 1가지 적기",
-      "placeId": "A5",
-      "hasAnswer": false
-    },
-    {
       "missionId": "m_A6_1",
       "type": "photo_reenact",
       "evidenceTypes": [
@@ -1217,20 +939,7 @@ export default {
       "requiresReservation": false,
       "outdoor": true,
       "fallbackMission": null,
-      "brief": "보행길 배경 조별 단체 사진",
-      "placeId": "A6",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A6_2",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "차도→사람길로 바뀐 흔적(옛 고가 구조) 찾아 사진+설명 (※그늘 없음 → 해질녘·얼음물)",
+      "brief": "보행길 배경 조별 단체 사진 (※그늘 없음 → 해질녘·얼음물)",
       "placeId": "A6",
       "hasAnswer": false
     },
@@ -1245,33 +954,6 @@ export default {
       "outdoor": false,
       "fallbackMission": "대표 먹거리집 간판·메뉴를 사진으로 담기",
       "brief": "시장에서 간식/밥 먹고 인증샷(대표 먹거리집 찾기)",
-      "placeId": "A9",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A9_2",
-      "type": "interview_experience",
-      "evidenceTypes": [
-        "voice",
-        "photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": "가게 간판·연혁 표시를 찾아 사진+메모",
-      "brief": "상인께 \"가장 오래된 가게는?\" 여쭙기(사전 허락·2인1조)",
-      "placeId": "A9",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A9_3",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "대형마트 대신 이곳에서 산 이유를 '이웃'으로 설명",
       "placeId": "A9",
       "hasAnswer": false
     },
@@ -1302,45 +984,6 @@ export default {
       "hasAnswer": false
     },
     {
-      "missionId": "m_D4_2",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "옛것과 새것이 공존하는 장면 1컷 + 한 줄('옛 골목 vs 지금')",
-      "placeId": "D4",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A8_1",
-      "type": "observe_quiz",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "지정 서가에서 특정 책의 특정 페이지 내용을 찾아 적기(보물찾기형)",
-      "placeId": "A8",
-      "hasAnswer": true
-    },
-    {
-      "missionId": "m_A8_2",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "지정 도서를 펴 보고 느낀 점/생각할 거리 나누기",
-      "placeId": "A8",
-      "hasAnswer": false
-    },
-    {
       "missionId": "m_A8_3",
       "type": "observe_quiz",
       "evidenceTypes": [
@@ -1356,20 +999,6 @@ export default {
   ],
   "courseMissions": [
     {
-      "missionId": "m_ALL_1",
-      "type": "reflect_share",
-      "evidenceTypes": [
-        "memo"
-      ],
-      "requiresReservation": false,
-      "outdoor": false,
-      "fallbackMission": null,
-      "brief": "징검다리 일지: 각 장소에서 '오늘 내가 누군가의 징검다리가 될 한 가지'를 한 줄씩 모아 마지막에 발표",
-      "scope": "course",
-      "placeId": null,
-      "hasAnswer": false
-    },
-    {
       "missionId": "m_ALL_2",
       "type": "photo_reenact",
       "evidenceTypes": [
@@ -1379,20 +1008,6 @@ export default {
       "outdoor": true,
       "fallbackMission": null,
       "brief": "출애굽 릴레이: 조원이 한 명씩 등장하는 '걷는 사진'을 장소마다 1컷씩 모아 영상으로",
-      "scope": "course",
-      "placeId": null,
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_ALL_3",
-      "type": "interview_experience",
-      "evidenceTypes": [
-        "photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": "발자국 따라 걷는 장면을 조원끼리 연출해 촬영(외부인 접촉 불필요)",
-      "brief": "따라 걷기: 『쫌 이상한 사람들』 '발자국' 모티프, 앞사람 발자국 따라 걷는 장면 1컷 + 의미 나눔",
       "scope": "course",
       "placeId": null,
       "hasAnswer": false
