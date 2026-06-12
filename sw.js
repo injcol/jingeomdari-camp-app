@@ -3,7 +3,7 @@
 //   캐시명에 배포 버전키 → 새 배포 시 VERSION 교체하면 구버전 캐시 제거(구버전 고착 방지).
 //   skipWaiting + clients.claim 즉시 활성. 모든 단계 실패는 네트워크로 폴백(SW가 앱을 깨지 않음).
 // ⚠ 새 배포마다 VERSION 갱신(master 재배포 시 본 줄 bump). file://는 SW 미지원(https/localhost 전용).
-const VERSION = 'v1-20260612';
+const VERSION = 'v20260612-185928';
 const CACHE = `jgd-${VERSION}`;
 
 // 정적 사전캐시(오프라인 첫 진입 대비). 개별 add로 일부 실패 무시. seed.js는 폴백용(런타임은 네트워크 우선).
