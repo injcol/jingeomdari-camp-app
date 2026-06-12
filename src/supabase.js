@@ -106,6 +106,17 @@ export async function teacherPhotoUrls(teacherCode, submissionId) {
   return res.json();   // { urls: [{ ref, signedUrl, expiresAt }] }
 }
 
+// 저널 production 사진(조 게이트) — group-photo Edge Function. 본 조 approved 제출의 서명 URL.
+export async function groupPhotoUrls(groupCode, { submissionId, purpose = 'journal' } = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/group-photo`, {
+    method: 'POST',
+    headers: baseHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ group_code: groupCode, submission_id: submissionId, purpose }),
+  });
+  if (!res.ok) throw new Error(`group-photo ${res.status}`);
+  return res.json();   // { group, photos: [{ submission_id, urls:[{ref,signedUrl}] }] }
+}
+
 // 네트워크 가용성(production 모드 판정 보조). file://·오프라인이면 false.
 export function online() {
   return typeof navigator === 'undefined' || navigator.onLine !== false;

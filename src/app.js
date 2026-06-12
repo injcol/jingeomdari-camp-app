@@ -16,6 +16,7 @@ let teacherData = { queue: null, board: null, consent: null, loading: false, err
 let photoModal = null;      // 사진 상세 모달 { refs, group, label }
 let consentForm = { groupId: '', label: '', archive: false, exportOk: false }; // 동의 추가 폼
 const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placeholder(매니페스트 §6 worker2 지정). url 미확정 19곳 노출
+let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
 function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
 
 function tabbar(active) {
@@ -82,9 +83,10 @@ function screenHome() {
 
   const children = [
     el('div', { class: 'top' }, [
-      el('div', { class: 'stamp tex-stone organic' }, Store.group.name),
+      el('div', { class: 'stamp tex-stone organic', style: `box-shadow:0 0 0 3px ${Store.group.color || 'transparent'}, 0 7px 16px -7px rgba(15,58,61,.6)` }, Store.group.name),
       el('div', { class: 'meta' }, [el('b', {}, '징검다리 여름캠프'), el('br'), '높은뜻섬기는교회 청소년부']),
     ]),
+    Store.showJoinHint() ? el('div', { class: 'join-hint' }, [el('span', { class: 'jh-ic' }, '🔗'), '선생님께 받은 우리 조 링크로 입장하면 인증·진행이 저장돼요. (지금은 둘러보기)']) : null,
     el('div', { class: 'h-title' }, [
       el('div', { class: 'k' }, '오늘 우리 조의 여정'),
       el('h1', { class: 'display' }, [`강을 건너며 `, el('em', {}, '기록하다')]),
@@ -655,7 +657,7 @@ function screenPlanner() {
 
 // ── 화면 ⑤ 조별 저널 — 승인 사진이 채워지는 지면(비대칭 매거진, 페이지마다 리듬 변주) ──
 function journalPhotoTiles(sub, variant) {
-  // 조 업로드 사진(비공개 버킷). production은 서명 URL(그룹 게이트 Edge), 데모/미보유는 브랜디드 타일.
+  // 조 업로드 사진(비공개 버킷). production은 서명 URL(group-photo Edge)로 로더가 채움, 데모/미보유는 브랜디드 타일.
   const n = sub && sub.photoRefs ? sub.photoRefs.length : (variant ? 2 : 1);
   const tiles = [];
   for (let i = 0; i < Math.max(1, n); i++) {
@@ -664,7 +666,28 @@ function journalPhotoTiles(sub, variant) {
       el('span', { class: 'jp-src' }, '조 업로드 · 동의 보관'),
     ]));
   }
-  return el('div', { class: `jp-photos ${variant ? 'grid' : 'full'}` }, tiles);
+  const attrs = { class: `jp-photos ${variant ? 'grid' : 'full'}` };
+  if (sub && sub.remoteId) attrs['data-sub'] = sub.remoteId;   // production 로더 매칭 키
+  return el('div', attrs, tiles);
+}
+
+// production 저널 사진 로더 — group-photo 서명 URL로 placeholder 타일을 실사진으로 교체. 실패 시 placeholder 유지.
+async function loadJournalPhotos() {
+  if (Store.localMode() || !Store.groupCode) return;
+  let data;
+  try { data = await Supabase.groupPhotoUrls(Store.groupCode, { purpose: 'journal' }); }
+  catch (e) { console.warn('[journal] 사진 로드 실패(placeholder 유지):', e.message); return; }
+  for (const p of (data && data.photos) || []) {
+    const box = document.querySelector(`.jp-photos[data-sub="${p.submission_id}"]`);
+    if (!box) continue;
+    const urls = (p.urls || []).filter((u) => u.signedUrl);
+    if (!urls.length) continue;
+    box.innerHTML = '';
+    urls.forEach((u) => {
+      const cell = el('div', { class: 'jp-photo loaded' }, [el('img', { src: u.signedUrl, alt: '조 업로드 사진', loading: 'lazy' })]);
+      box.appendChild(cell);
+    });
+  }
 }
 
 function screenJournal() {
@@ -723,6 +746,45 @@ function screenJournal() {
   ]);
 }
 
+// ── 조별 전용 링크 자동 입장 (#/join/<조코드>) — 학생 타이핑 0 ──
+async function doJoin(code) {
+  joining = { code, status: 'pending', error: null }; render();
+  try {
+    await Store.joinGroup(code);
+    joining = { code, status: 'done', error: null };
+    location.hash = '#/';                 // 입장 성공 → 홈
+  } catch (e) {
+    joining = { code, status: 'error', error: String(e.message || e) };
+  }
+  render();
+}
+
+function screenJoin(code) {
+  if (Store.isDemoEnv()) {
+    return el('main', { class: 'phone tex-paper col' }, [el('div', { class: 'join-box' }, [
+      el('div', { class: 'jn-ic tex-water organic' }, '🔗'),
+      el('h1', { class: 'display' }, '조별 링크 입장'),
+      el('p', { class: 'muted' }, '이 환경(로컬·오프라인)에서는 데모 모드로 동작해요. 실제 입장은 배포된 조별 링크에서 작동합니다.'),
+      el('a', { href: '#/', class: 'btn' }, '데모 홈으로'),
+    ])]);
+  }
+  if (joining.code !== code || joining.status === 'idle') doJoin(code);
+  if (joining.status === 'error') {
+    return el('main', { class: 'phone tex-paper col' }, [el('div', { class: 'join-box' }, [
+      el('div', { class: 'jn-ic tex-water organic err' }, '!'),
+      el('h1', { class: 'display' }, '입장할 수 없어요'),
+      el('p', { class: 'muted' }, '조별 링크가 올바르지 않거나 만료됐어요. 선생님께 받은 우리 조 링크를 다시 확인해 주세요.'),
+      el('button', { class: 'btn', onclick: () => doJoin(code) }, '다시 시도'),
+      el('a', { href: '#/', class: 'jn-back' }, '둘러보기(데모)'),
+    ])]);
+  }
+  return el('main', { class: 'phone tex-paper col' }, [el('div', { class: 'join-box' }, [
+    el('div', { class: 'jn-ic tex-water organic' }, '⛰'),
+    el('h1', { class: 'display' }, '우리 조로 입장 중…'),
+    el('p', { class: 'muted' }, '잠시만 기다려 주세요.'),
+  ])]);
+}
+
 function stub(title, msg, tab) {
   return el('main', { class: 'phone tex-paper col' }, [
     el('div', { class: 'pad' }, [el('h1', { class: 'display' }, title), el('p', { class: 'muted' }, msg)]),
@@ -736,12 +798,14 @@ function render() {
   pendingMap = null;
   const mPlace = h.match(/^#\/place\/([A-D]\d+)/);
   const mMission = h.match(/^#\/mission\/(m_[A-Za-z0-9_]+)/);
+  const mJoin = h.match(/^#\/join\/([A-Za-z0-9]+)/);
   if (!mMission && draft) { draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = null; }  // 미션 이탈 시 드래프트 정리
-  if (mMission) root.appendChild(screenMission(mMission[1]));
+  if (mJoin) root.appendChild(screenJoin(mJoin[1]));
+  else if (mMission) root.appendChild(screenMission(mMission[1]));
   else if (mPlace) root.appendChild(screenPlace(mPlace[1]));
   else if (h.startsWith('#/teacher')) root.appendChild(screenTeacher());
   else if (h.startsWith('#/planner')) root.appendChild(screenPlanner());
-  else if (h.startsWith('#/journal')) root.appendChild(screenJournal());
+  else if (h.startsWith('#/journal')) { root.appendChild(screenJournal()); requestAnimationFrame(() => loadJournalPhotos()); }
   else root.appendChild(screenHome());
   window.scrollTo(0, 0);
   if (pendingMap) {
@@ -757,3 +821,7 @@ window.addEventListener('hashchange', render);
 // 재연결 시 승인/보완 상태 동기화(production). 로컬모드는 no-op.
 window.addEventListener('online', () => { Store.refreshStatus().then(render).catch(() => {}); });
 render();
+// 초기 동기화: 이미 입장한 production 상태면 서버에서 코스·진행 갱신(새로고침 유지).
+if (!Store.localMode() && !location.hash.startsWith('#/join')) {
+  Store.loadRemoteCourse().then(() => Store.refreshStatus()).then(render).catch(() => {});
+}

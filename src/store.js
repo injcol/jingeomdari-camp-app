@@ -44,9 +44,13 @@ function normalize(s) {                 // 구버전 영속 상태에 신규 필
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
 
-// production 모드 = https + Supabase 설정 + 조 코드 입장. file://·미입장이면 로컬 데모(네트워크 0).
+// 데모 환경 = file:// 또는 Supabase 미설정 → 항상 로컬 데모(네트워크 0).
+function isDemoEnv() {
+  return (typeof location !== 'undefined' && location.protocol === 'file:') || !Supabase.configured();
+}
+// production 모드 = 데모환경 아님 + 조 코드 입장. (미입장이면 쓰기는 로컬 모킹)
 function isLocalMode() {
-  return (typeof location !== 'undefined' && location.protocol === 'file:') || !Supabase.configured() || !state.groupCode;
+  return isDemoEnv() || !state.groupCode;
 }
 
 export const Store = {
@@ -78,6 +82,27 @@ export const Store = {
   setGroupCode(code) { state.groupCode = code || null; save(); },
   isLocalMode,
   localMode() { return isLocalMode(); },
+  isDemoEnv,
+  // production 환경인데 아직 미입장 → 홈에 '조별 링크로 입장' 안내(강제 게이트 아님)
+  showJoinHint() { return !isDemoEnv() && !state.groupCode; },
+
+  // ── 조별 전용 링크 자동 입장 (#/join/<조코드>) — 학생 타이핑 0 ──
+  async joinGroup(code) {
+    const rows = await Supabase.rpc('join_group', { p_code: code });
+    const g = Array.isArray(rows) ? rows[0] : rows;
+    if (!g || !g.group_id) throw new Error('invalid_group_code');
+    state.group = { groupId: g.group_id, name: g.name, color: g.color || '#1f6f74' };
+    state.groupCode = code; save();
+    try { await this.loadRemoteCourse(); } catch {}
+    try { await this.refreshStatus(); } catch {}
+    return g;
+  },
+  async loadRemoteCourse() {
+    const rows = await Supabase.rpc('get_my_course', { p_code: state.groupCode });
+    if (Array.isArray(rows) && rows.length) {
+      state.course = rows.map((r) => ({ placeId: r.place_id, sortOrder: r.sort_order })); save();
+    }
+  },
   // 미션 메타: 콘텐츠는 오프라인 seed 사용(클라엔 정답 없음). production 보강 시에도 *_public 뷰만(supabase.js가 강제).
   missionMeta(missionId) {
     const m = (seed.missions || []).find((x) => x.missionId === missionId);
@@ -140,15 +165,23 @@ export const Store = {
     state.progress[placeId] = pr; save();
   },
 
-  // production 상태 동기화: get_my_status RPC → 승인/보완 반영(+승인 시 장소 점등). 로컬모드는 no-op.
+  // production 상태 동기화: get_my_status RPC → 서버 권위로 submissions/progress 재구성. 로컬모드는 no-op.
   async refreshStatus() {
     if (isLocalMode()) return;
     const rows = await Supabase.rpc('get_my_status', { p_code: state.groupCode });
     for (const r of rows || []) {
-      const cur = state.submissions[r.mission_id];
-      if (!cur) continue;
-      cur.status = r.status; cur.teacherNote = r.teacher_note || null; cur.remoteId = r.submission_id;
-      if (r.status === 'approved' && cur.scope === 'place' && cur.placeId) this._markProgress(cur.placeId, 'approved');
+      const meta = this.missionMeta(r.mission_id);
+      const placeId = meta ? meta.placeId : null;
+      const prev = state.submissions[r.mission_id] || {};
+      state.submissions[r.mission_id] = {
+        status: r.status, scope: r.mission_scope, placeId,
+        photoRefs: prev.photoRefs || [], comment: prev.comment || '',
+        teacherNote: r.teacher_note || null, remoteId: r.submission_id, createdAt: r.created_at,
+      };
+      if (r.mission_scope === 'place' && placeId) {
+        if (r.status === 'approved') this._markProgress(placeId, 'approved');
+        else if (r.status === 'pending') this._markProgress(placeId, 'pending');
+      }
     }
     save();
   },

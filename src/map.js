@@ -25,9 +25,16 @@ export function loadNaverMaps() {
 export function renderMap(container, fallbackEl, lat, lng, name) {
   if (lat == null || lng == null) return Promise.reject(new Error('no_coords'));
   return loadNaverMaps().then((maps) => {
+    // P1: 컨테이너 높이 보장(0높이면 SDK가 0크기로 그림). CSS 명시높이 + 안전망.
+    if (!container.offsetHeight) {
+      const h = (container.parentElement && container.parentElement.offsetHeight) || 172;
+      container.style.height = h + 'px';
+    }
     const pos = new maps.LatLng(lat, lng);
     const map = new maps.Map(container, { center: pos, zoom: 16, scaleControl: false, mapDataControl: false, logoControlOptions: { position: maps.Position.BOTTOM_LEFT } });
     new maps.Marker({ position: pos, map, title: name || '' });
+    // 레이아웃 확정 후 resize 트리거 — 0→실측 크기로 타일 재배치(보이지 않던 결함 방지)
+    requestAnimationFrame(() => { try { maps.Event.trigger(map, 'resize'); } catch {} });
     if (fallbackEl) fallbackEl.style.display = 'none';
     return map;
   });

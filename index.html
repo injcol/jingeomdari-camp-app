@@ -14,5 +14,13 @@
 <body>
 <div id="app"></div>
 <script type="module" src="src/app.js"></script>
+<script>
+/* SW 등록 — 실패는 무시(앱을 깨지 않음). file://는 미지원이라 자동 skip. */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('[sw] 등록 실패(무시):', e && e.message));
+  });
+}
+</script>
 </body>
 </html>
