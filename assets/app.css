@@ -139,6 +139,10 @@
 .mini.del{color:var(--terra); border-color:rgba(177,90,55,.4);}
 .mini.ghost-lock{color:var(--stone-d); background:transparent; border:none;}
 
+.hub-note{display:flex; align-items:flex-start; gap:7px; margin-top:11px; padding:11px 13px; border-radius:11px; background:rgba(31,111,116,.08); border:1px solid rgba(31,111,116,.18); font-size:13px; color:var(--ink-soft); line-height:1.5;}
+.hub-note .hub-ic{flex:none;}
+.hub-note b{color:var(--river-900);}
+.rec-note{margin:0 16px 8px; font-size:12.5px; color:var(--stone-d); line-height:1.55;}
 .rec-chips{display:flex; flex-wrap:wrap; gap:8px; padding:0 16px;}
 .rec-chip{font:inherit; font-size:13px; padding:9px 13px; border-radius:999px; border:1.5px solid var(--moss); background:rgba(93,107,57,.08); color:var(--moss); cursor:pointer;}
 .rec-chip b{color:var(--ink);}
@@ -325,6 +329,41 @@
 .cs-add-k{font-size:13.5px; font-weight:700; color:var(--ink);}
 .cs-sel, .cs-name{font:inherit; font-size:15px; padding:11px; border:1px solid var(--line); border-radius:10px; background:#fff;}
 .cs-add-tg{display:flex; gap:8px;}
+
+/* ── 화면 ⑤ 조별 저널 (매거진 지면) ── */
+.jr-cover{padding:30px 22px 22px; position:relative;}
+.jr-cover .jr-k{font-size:13px; color:var(--moss); letter-spacing:.14em;}
+.jr-cover h1{font-size:40px; margin:.1em 0 .15em;}
+.jr-cover .jr-sub{font-size:14px; color:var(--stone-d); line-height:1.6;}
+.jr-cover .jr-rule{margin-top:16px; height:3px; width:54px; background:var(--terra);}
+
+.jr-empty{padding:60px 30px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;}
+.jr-empty-art{width:120px; height:120px; border-radius:18px 22px 16px 24px/22px 16px 24px 18px; border:1.5px dashed var(--line); display:grid; place-items:center; margin-bottom:8px;}
+.jr-empty-art span{font-size:46px; color:var(--stone); opacity:.55;}
+.jr-empty p.display{font-size:23px; margin:.1em 0;}
+.jr-empty .btn{margin-top:14px;}
+
+.jr-pages{display:flex; flex-direction:column;}
+.jr-page{padding:22px 18px; border-top:1px solid var(--line);}
+.jr-page .jr-no{display:inline-block; font-size:12.5px; color:var(--stone-d); font-weight:700; letter-spacing:.04em; text-decoration:none; margin-bottom:12px;}
+.jr-page .jr-no:active{color:var(--river-700);}
+.jr-photos{display:grid; gap:8px; margin-bottom:14px;}
+.jr-photos.full{grid-template-columns:1fr;}
+.jr-photos.grid{grid-template-columns:1fr 1fr;}
+.jp-photo{position:relative; aspect-ratio:4/3; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:rgba(243,236,221,.85);}
+.jr-photos.full .jp-photo{aspect-ratio:16/10;}
+.jp-cam{font-size:30px; opacity:.9;}
+.jp-src{font-size:11px; color:rgba(243,236,221,.7);}
+.jr-text h2{font-size:25px; margin:.1em 0 .35em;}
+.jr-quote{font-size:16px; line-height:1.6; color:var(--ink-soft); font-style:italic; margin:0 0 .5em;}
+.jr-q{font-size:14px; line-height:1.65; color:var(--stone-d); background:rgba(93,107,57,.07); border-left:3px solid var(--moss); padding:10px 13px; border-radius:0 10px 10px 0;}
+.jr-q .jr-q-k{font-weight:700; color:var(--moss);}
+.jr-cap{font-size:13.5px; color:var(--stone-d); margin:.2em 0;}
+.jr-page.course{background:rgba(31,111,116,.05);}
+.jr-page.v .jr-text h2{color:var(--river-700);}
+
+.jr-export{padding:20px 18px 26px; border-top:1px solid var(--line);}
+.jr-export-note{font-size:12px; color:var(--stone-d); line-height:1.55; text-align:center; margin-top:9px;}
 
 /* 사진 상세 모달 */
 .pm-scrim{position:absolute; inset:0; background:rgba(15,42,40,.6); display:flex; align-items:flex-end; z-index:50;}

@@ -24,6 +24,13 @@ export const MISSION_TYPE = {
 
 export const THEME_LABEL = { faith: '신앙', history: '역사·현대사', neighbor: '이웃', ecology: '생태', fun: '흥미' };
 
+// 출발·도착 허브 (사용자 지시 2026-06-12: 종로5가 → 한국교회100주년기념관). hubMinutes worker1 재산정 반영(20값).
+// 최근접역: 종로5가역 1호선(직선 403m·도보 약 6분) — 브리프 '혜화역 인접'은 실측 불일치(research/hub_change_validation.md).
+export const HUB = {
+  name: '한국교회100주년기념관', short: '100주년기념관', address: '서울 종로구 대학로3길 29 (연지동 135)',
+  lat: 37.574541, lng: 127.000626, nearestStation: '종로5가역 1호선 (도보 6분)',
+};
+
 // DOM 헬퍼: el('div', {class:'x'}, [children|string])
 export function el(tag, attrs = {}, children = []) {
   const n = document.createElement(tag);

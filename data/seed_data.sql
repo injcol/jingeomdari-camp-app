@@ -4,26 +4,26 @@
 begin;
 
 insert into place (place_id,name,theme_tags,route_category,stay_minutes,hub_minutes,transfer_count,route_type,verified,indoor,photo_friendly,photo_url,photo_source,photo_license,photo_attribution,needs_field_shoot,lat,lng) values
-('B11','연동교회',ARRAY['faith']::theme_tag[],'required',30,4,0,'walk',true,true,true,null,null,null,null,true,37.57366,127.0015),
-('D5','광장시장',ARRAY['neighbor','fun']::theme_tag[],'required',60,3,0,'walk',true,true,true,null,null,null,null,true,37.57006,126.99895),
-('C3','전태일기념관+다리',ARRAY['history']::theme_tag[],'required',50,15,0,'walk',false,true,true,null,null,null,null,true,37.56842,126.98938),
-('A7','정동제일교회',ARRAY['faith']::theme_tag[],'select',20,18,0,'noTransfer',false,false,true,null,null,null,null,true,37.56541,126.97273),
-('B1','배재학당역사박물관',ARRAY['faith']::theme_tag[],'select',40,18,0,'noTransfer',false,true,true,null,null,null,null,true,37.56401,126.9726),
-('B2','이화박물관(심슨기념관)',ARRAY['faith']::theme_tag[],'select',30,18,0,'noTransfer',false,true,true,null,null,null,null,true,37.56608,126.97145),
-('B6','승동교회',ARRAY['faith']::theme_tag[],'select',20,15,0,'walk',false,true,true,null,null,null,null,true,37.57158,126.98607),
-('A15','양화진선교사묘원',ARRAY['faith']::theme_tag[],'select',60,45,2,'2transfer',false,false,true,null,null,null,null,true,37.54654,126.91093),
-('A3','서대문형무소역사관',ARRAY['history']::theme_tag[],'select',90,25,1,'1transfer',false,true,true,null,null,null,null,true,37.57461,126.95561),
-('A4','중명전',ARRAY['history']::theme_tag[],'select',40,20,0,'noTransfer',false,true,true,null,null,null,null,true,37.56673,126.97252),
-('A2','대한민국역사박물관',ARRAY['history']::theme_tag[],'select',90,18,1,'1transfer',false,true,true,null,null,null,null,true,37.57399,126.97786),
-('A10','광화문광장',ARRAY['history']::theme_tag[],'select',30,18,1,'1transfer',false,false,true,null,null,null,null,true,37.5726,126.97692),
-('A1','평화의 소녀상',ARRAY['history']::theme_tag[],'select',15,18,1,'1transfer',false,false,true,null,null,null,null,true,37.57497,126.98046),
-('C2','이회영기념관',ARRAY['history']::theme_tag[],'select',40,28,1,'1transfer',false,true,true,null,null,null,null,true,37.57296,126.96564),
-('A5','청계천(청계광장)',ARRAY['ecology']::theme_tag[],'select',40,5,0,'walk',false,false,true,'https://www.kogl.or.kr/recommend/recommendView.do?recommendIdx=3120','한국관광공사(공공누리 포털)','공공누리 제1유형','본 저작물은 한국관광공사에서 공공누리 제1유형으로 개방한 ''청계광장''을 이용하였으며, 공공누리(www.kogl.or.kr)에서 무료로 다운로드할 수 있습니다.',false,37.56907,126.97759),
-('A6','서울로 7017',ARRAY['ecology']::theme_tag[],'select',40,20,0,'noTransfer',false,false,true,null,null,null,null,true,37.55674,126.9706),
-('A9','영천시장',ARRAY['neighbor']::theme_tag[],'select',40,25,1,'1transfer',false,true,true,null,null,null,null,true,37.57048,126.96114),
+('B11','연동교회',ARRAY['faith']::theme_tag[],'required',30,2,0,'walk',true,true,true,null,null,null,null,true,37.57366,127.0015),
+('D5','광장시장',ARRAY['neighbor','fun']::theme_tag[],'required',60,8,0,'walk',true,true,true,null,null,null,null,true,37.57006,126.99895),
+('C3','전태일기념관+다리',ARRAY['history']::theme_tag[],'required',50,18,0,'walk',false,true,true,null,null,null,null,true,37.56842,126.98938),
+('A7','정동제일교회',ARRAY['faith']::theme_tag[],'select',20,24,0,'noTransfer',false,false,true,null,null,null,null,true,37.56541,126.97273),
+('B1','배재학당역사박물관',ARRAY['faith']::theme_tag[],'select',40,24,0,'noTransfer',false,true,true,null,null,null,null,true,37.56401,126.9726),
+('B2','이화박물관(심슨기념관)',ARRAY['faith']::theme_tag[],'select',30,24,0,'noTransfer',false,true,true,null,null,null,null,true,37.56608,126.97145),
+('B6','승동교회',ARRAY['faith']::theme_tag[],'select',20,16,0,'walk',false,true,true,null,null,null,null,true,37.57158,126.98607),
+('A15','양화진선교사묘원',ARRAY['faith']::theme_tag[],'select',60,51,2,'2transfer',false,false,true,null,null,null,null,true,37.54654,126.91093),
+('A3','서대문형무소역사관',ARRAY['history']::theme_tag[],'select',90,31,1,'1transfer',false,true,true,null,null,null,null,true,37.57461,126.95561),
+('A4','중명전',ARRAY['history']::theme_tag[],'select',40,26,0,'noTransfer',false,true,true,null,null,null,null,true,37.56673,126.97252),
+('A2','대한민국역사박물관',ARRAY['history']::theme_tag[],'select',90,24,1,'1transfer',false,true,true,null,null,null,null,true,37.57399,126.97786),
+('A10','광화문광장',ARRAY['history']::theme_tag[],'select',30,24,1,'1transfer',false,false,true,null,null,null,null,true,37.5726,126.97692),
+('A1','평화의 소녀상',ARRAY['history']::theme_tag[],'select',15,24,1,'1transfer',false,false,true,null,null,null,null,true,37.57497,126.98046),
+('C2','이회영기념관',ARRAY['history']::theme_tag[],'select',40,34,1,'1transfer',false,true,true,null,null,null,null,true,37.57296,126.96564),
+('A5','청계천(청계광장)',ARRAY['ecology']::theme_tag[],'select',40,8,0,'walk',false,false,true,'https://www.kogl.or.kr/recommend/recommendView.do?recommendIdx=3120','한국관광공사(공공누리 포털)','공공누리 제1유형','본 저작물은 한국관광공사에서 공공누리 제1유형으로 개방한 ''청계광장''을 이용하였으며, 공공누리(www.kogl.or.kr)에서 무료로 다운로드할 수 있습니다.',false,37.56907,126.97759),
+('A6','서울로 7017',ARRAY['ecology']::theme_tag[],'select',40,26,0,'noTransfer',false,false,true,null,null,null,null,true,37.55674,126.9706),
+('A9','영천시장',ARRAY['neighbor']::theme_tag[],'select',40,31,1,'1transfer',false,true,true,null,null,null,null,true,37.57048,126.96114),
 ('D3','세운옥상',ARRAY['fun']::theme_tag[],'select',20,12,0,'walk',false,false,true,null,null,null,null,true,37.56914,126.99524),
 ('D4','익선동 한옥거리',ARRAY['fun']::theme_tag[],'select',40,15,0,'walk',false,false,true,null,null,null,null,true,37.57344,126.98978),
-('A8','교보문고 광화문점',ARRAY['fun']::theme_tag[],'select',40,18,1,'1transfer',false,true,true,null,null,null,null,true,37.5708,126.97791)
+('A8','교보문고 광화문점',ARRAY['fun']::theme_tag[],'select',40,24,1,'1transfer',false,true,true,null,null,null,null,true,37.5708,126.97791)
 on conflict (place_id) do update set name=excluded.name,theme_tags=excluded.theme_tags,route_category=excluded.route_category,stay_minutes=excluded.stay_minutes,hub_minutes=excluded.hub_minutes,transfer_count=excluded.transfer_count,route_type=excluded.route_type,verified=excluded.verified,indoor=excluded.indoor,photo_friendly=excluded.photo_friendly,photo_url=excluded.photo_url,photo_source=excluded.photo_source,photo_license=excluded.photo_license,photo_attribution=excluded.photo_attribution,needs_field_shoot=excluded.needs_field_shoot,lat=excluded.lat,lng=excluded.lng;
 
 insert into course (course_id,type,place_ids) values
@@ -103,7 +103,7 @@ insert into reading (reading_id,served_place_ids,theme,word_target,operational_n
 ('R-A2',ARRAY['A2'],'history',800,'null','문체부 보도자료(개관) https://mcst.go.kr/kor/s_notice/press/pressView.jsp?pSeq=12481 ; 위키백과 https://ko.wikipedia.org/wiki/대한민국역사박물관'),
 ('R-A3',ARRAY['A3'],'history',800,'null','한국민족문화대백과 서대문형무소 https://encykorea.aks.ac.kr/Article/E0066513 ; 우리역사넷 https://contents.history.go.kr/mobile/kc/view.do?levelId=kc_r400150'),
 ('R-A4',ARRAY['A4'],'history',800,'null','위키백과 중명전 https://ko.wikipedia.org/wiki/중명전 ; 국가유산청 중명전 https://royal.khs.go.kr/ROYAL/contents/R104020000.do?groupCode=dsg&programCode=exhibition2'),
-('R-A5',ARRAY['A5'],'ecology',800,'야외 도보 동선(종로5가~광화문). 여름 물놀이 구간 안전 유의.','한국민족문화대백과 청계천 https://encykorea.aks.ac.kr/Article/E0068490 ; 한국일보 https://www.hankookilbo.com/News/Read/201203291797847459'),
+('R-A5',ARRAY['A5'],'ecology',800,'야외 도보 동선(청계천변, 광장시장~광화문). 여름 물놀이 구간 안전 유의.','한국민족문화대백과 청계천 https://encykorea.aks.ac.kr/Article/E0068490 ; 한국일보 https://www.hankookilbo.com/News/Read/201203291797847459'),
 ('R-A6',ARRAY['A6'],'ecology',800,'야외, 그늘 거의 없음 — 해질녘 배치 권장, 얼음물·모자 필수.','위키백과 서울로 7017 https://ko.wikipedia.org/wiki/서울로_7017 ; 서울사랑 https://love.seoul.go.kr/articles/4254'),
 ('R-A7',ARRAY['A7'],'faith',800,'null','한국민족문화대백과 정동제일교회 https://encykorea.aks.ac.kr/Article/E0050108 ; 위키백과 정동제일교회 https://ko.wikipedia.org/wiki/정동제일교회'),
 ('R-A8',ARRAY['A8'],'faith',800,'실내·냉방(폭염 대피 거점). 09:30–22:00, 설·추석 당일 휴점. 광화문역 지하 직결.','교보문고 광화문점 매장안내 https://store.kyobobook.co.kr/store-info/001'),

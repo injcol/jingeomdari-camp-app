@@ -15,7 +15,7 @@ export default {
       "routeCategory": "required",
       "planner": {
         "stayMinutes": 30,
-        "hubMinutes": 4,
+        "hubMinutes": 2,
         "transferCount": 0,
         "routeType": "walk",
         "verified": true
@@ -49,7 +49,7 @@ export default {
       "routeCategory": "required",
       "planner": {
         "stayMinutes": 60,
-        "hubMinutes": 3,
+        "hubMinutes": 8,
         "transferCount": 0,
         "routeType": "walk",
         "verified": true
@@ -82,7 +82,7 @@ export default {
       "routeCategory": "required",
       "planner": {
         "stayMinutes": 50,
-        "hubMinutes": 15,
+        "hubMinutes": 18,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
@@ -115,7 +115,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 20,
-        "hubMinutes": 18,
+        "hubMinutes": 24,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
@@ -148,7 +148,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 18,
+        "hubMinutes": 24,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
@@ -181,7 +181,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 30,
-        "hubMinutes": 18,
+        "hubMinutes": 24,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
@@ -214,7 +214,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 20,
-        "hubMinutes": 15,
+        "hubMinutes": 16,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
@@ -247,7 +247,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 60,
-        "hubMinutes": 45,
+        "hubMinutes": 51,
         "transferCount": 2,
         "routeType": "2transfer",
         "verified": false
@@ -280,7 +280,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 90,
-        "hubMinutes": 25,
+        "hubMinutes": 31,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -313,7 +313,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 20,
+        "hubMinutes": 26,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
@@ -346,7 +346,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 90,
-        "hubMinutes": 18,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -379,7 +379,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 30,
-        "hubMinutes": 18,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -412,7 +412,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 15,
-        "hubMinutes": 18,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -445,7 +445,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 28,
+        "hubMinutes": 34,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -478,7 +478,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 5,
+        "hubMinutes": 8,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
@@ -511,7 +511,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 20,
+        "hubMinutes": 26,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
@@ -544,7 +544,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 25,
+        "hubMinutes": 31,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -643,7 +643,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 18,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -704,7 +704,7 @@ export default {
       "requiresReservation": false,
       "outdoor": false,
       "fallbackMission": null,
-      "brief": "캠프가 종로5가에서 시작하듯, \"처음 시작된 자리\"의 의미를 한 줄로",
+      "brief": "캠프가 이 자리(연동교회)에서 시작하듯, \"처음 시작된 자리\"의 의미를 한 줄로",
       "placeId": "B11",
       "hasAnswer": false
     },
@@ -1467,7 +1467,8 @@ export default {
         "A4"
       ],
       "dir": "시청 무환승",
-      "est": "공통3 + 약 3~4시간"
+      "est": "공통3 + 약 3~4시간",
+      "flow": "허브→연동교회 묵상→종로5가역 1호선으로 정동 이동→정동길 묶음→광장시장 식사→허브 복귀"
     },
     {
       "id": "rc_gwanghwamun",
@@ -1479,7 +1480,8 @@ export default {
         "A1"
       ],
       "dir": "종로3가 환승/시청",
-      "est": "공통3 + 약 3.5시간"
+      "est": "공통3 + 약 3.5시간",
+      "flow": "허브→연동교회 묵상→광화문 묶음(냉방거점 역사박물관·교보문고 활용)→광장시장 식사→허브 복귀"
     },
     {
       "id": "rc_insadong",
@@ -1489,8 +1491,9 @@ export default {
         "D3",
         "D4"
       ],
-      "dir": "종로5가 도보권",
-      "est": "공통3 + 약 3시간"
+      "dir": "허브 도보권(지하철 불요)",
+      "est": "공통3 + 약 3시간",
+      "flow": "허브→연동교회(2분)→광장시장 식사(8분)→세운옥상→익선동→승동교회→허브 (전 구간 도보 루프)"
     },
     {
       "id": "rc_seodaemun",
@@ -1501,7 +1504,8 @@ export default {
         "C2"
       ],
       "dir": "독립문 1환승",
-      "est": "공통3 + 약 4시간"
+      "est": "공통3 + 약 4시간",
+      "flow": "허브→연동교회 묵상→종로5가역 1호선 오전 출발(원거리 묶음)→서대문 묶음→광장시장 식사→허브 복귀"
     },
     {
       "id": "rc_eco",
@@ -1512,7 +1516,8 @@ export default {
         "A15"
       ],
       "dir": "청계천 도보+서울역/합정",
-      "est": "공통3 + 약 4시간(양화진 반일)"
+      "est": "공통3 + 약 4시간(양화진 반일)",
+      "flow": "허브→연동교회 묵상→청계천(허브 도보 8분) 도보 동선→서울로/양화진(반일)→광장시장 식사→허브 복귀"
     }
   ],
   "readings": [
@@ -1631,7 +1636,7 @@ export default {
       ],
       "theme": "faith",
       "title": "처음 시작된 자리, 연동교회",
-      "body": "종로5가 큰길 옆, 차 소리에 묻힐 듯 오래된 교회 하나가 서 있다. 오늘 너희의 여정이 시작되는 곳이다.\n\n이 교회는 1894년, 작은 초가 한 칸에서 시작됐다. 무어 선교사와 이길함(그래함 리), 그리고 한국 사람 서상륜 같은 이들이 모여 예배를 드렸다. 거창한 건물도, 많은 사람도 없었다. 1900년에는 게일 선교사가 초대 담임목사로 부임해 교회를 일궜고, 이곳에서 여학생을 가르치던 작은 배움터는 훗날 정신여학교로 이어졌다.\n\n생각해 보면 출애굽도 그랬다. 거대한 군대가 아니라, 길을 나선 한 무리의 사람들에게서 시작됐다. 큰 것에서 시작되는 일은 의외로 드물다. 작은 자리, 몇 사람, 한 걸음 — 하나님은 늘 거기서 시작하신다.\n\n너희도 지금 종로5가라는 한 점에서 출발한다. 오늘 하루, 이 도시를 걸으며 너는 누군가에게 '징검다리'가 되어 볼 것이다.\n\n**질문.** 이 여정을 시작하는 너의 마음은 지금 어떤가? 무엇을 기대하며, 누구와 함께 걷고 싶은가?"
+      "body": "종로 큰길 옆 연지동, 차 소리에 묻힐 듯 오래된 교회 하나가 서 있다. 오늘 너희의 여정이 시작되는 곳이다.\n\n이 교회는 1894년, 작은 초가 한 칸에서 시작됐다. 무어 선교사와 이길함(그래함 리), 그리고 한국 사람 서상륜 같은 이들이 모여 예배를 드렸다. 거창한 건물도, 많은 사람도 없었다. 1900년에는 게일 선교사가 초대 담임목사로 부임해 교회를 일궜고, 이곳에서 여학생을 가르치던 작은 배움터는 훗날 정신여학교로 이어졌다.\n\n생각해 보면 출애굽도 그랬다. 거대한 군대가 아니라, 길을 나선 한 무리의 사람들에게서 시작됐다. 큰 것에서 시작되는 일은 의외로 드물다. 작은 자리, 몇 사람, 한 걸음 — 하나님은 늘 거기서 시작하신다.\n\n너희도 지금 이 자리, 연지동 한 점에서 출발한다. 오늘 하루, 이 도시를 걸으며 너는 누군가에게 '징검다리'가 되어 볼 것이다.\n\n**질문.** 이 여정을 시작하는 너의 마음은 지금 어떤가? 무엇을 기대하며, 누구와 함께 걷고 싶은가?"
     },
     {
       "readingId": "R-B2",

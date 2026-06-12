@@ -153,6 +153,26 @@ export const Store = {
     save();
   },
 
+  // ── 조별 저널 (D6) — 승인=게재 원칙. 완료(approved)된 장소만 지면으로. 승인 사진은 조 업로드(비공개 버킷). ──
+  // 각 페이지: { placeId, place, submission(승인 제출, 있으면 사진·코멘트), reading(읽을거리 질문) }
+  journal() {
+    const pages = [];
+    for (const { placeId } of this.course) {
+      const pr = state.progress[placeId];
+      if (!pr || pr.status !== 'approved') continue;           // 승인=게재, 대기/미진행 미표시
+      const sub = Object.values(state.submissions).find((s) => s.placeId === placeId && s.status === 'approved') || null;
+      pages.push({ scope: 'place', placeId, place: this.place(placeId), submission: sub, reading: this.readingFor(placeId) });
+    }
+    // 승인된 코스 미션(장소 비귀속)도 별지로
+    for (const [mid, s] of Object.entries(state.submissions)) {
+      if (s.scope === 'course' && s.status === 'approved') {
+        const cm = (seed.courseMissions || []).find((x) => x.missionId === mid);
+        pages.push({ scope: 'course', missionId: mid, brief: cm ? cm.brief : '코스 미션', submission: s });
+      }
+    }
+    return pages;
+  },
+
   // (데모 전용) 교사 승인/보완 미리보기 — 로컬모드에서만 UI 상태 확인용. production은 교사 화면(D5)/RPC가 처리.
   demoReview(missionId, status, note) {
     if (!isLocalMode()) return;

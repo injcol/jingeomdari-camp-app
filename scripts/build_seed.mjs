@@ -72,10 +72,10 @@ for (let i = 0; i < misMd.length; i++) {
 const courses = [{ courseId: 'common', type: 'common', placeIds: [...REQUIRED] }];
 const recommendedCourses = [];
 for (const line of courseMd.split('\n')) {
-  const m = line.match(/\{\s*id:"([^"]+)",\s*title:"([^"]+)",\s*placeIds:\[([^\]]*)\](?:,\s*dir:"([^"]*)")?(?:,\s*est:"([^"]*)")?/);
+  const m = line.match(/\{\s*id:"([^"]+)",\s*title:"([^"]+)",\s*placeIds:\[([^\]]*)\](?:,\s*dir:"([^"]*)")?(?:,\s*est:"([^"]*)")?(?:,\s*flow:"([^"]*)")?/);
   if (!m) continue;
   const placeIds = m[3].split(',').map((s) => s.replace(/["\s]/g, '')).filter(Boolean);
-  recommendedCourses.push({ id: m[1], title: m[2], placeIds, dir: m[4] || null, est: m[5] || null });
+  recommendedCourses.push({ id: m[1], title: m[2], placeIds, dir: m[4] || null, est: m[5] || null, flow: m[6] || null });
   courses.push({ courseId: m[1], type: 'recommended', placeIds });
 }
 

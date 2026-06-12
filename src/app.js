@@ -4,7 +4,7 @@
 // 플래너/인증/저널/관리자는 D3~D6.
 import { Store } from './store.js';
 import { Teacher } from './teacher.js';
-import { el, kakaoRouteUrl, naverSearchUrl, MISSION_TYPE, THEME_LABEL } from './util.js';
+import { el, kakaoRouteUrl, naverSearchUrl, MISSION_TYPE, THEME_LABEL, HUB } from './util.js';
 import { renderMap } from './map.js';
 
 const app = () => document.getElementById('app');
@@ -76,7 +76,7 @@ function screenHome() {
     el('div', { class: 'next-body' }, [
       el('div', { class: 'next-k' }, '다음 징검다리'),
       el('div', { class: 'next-h display' }, next.name),
-      el('div', { class: 'next-p' }, `${THEME_LABEL[next.themeTags[0]] || ''} · 종로5가 허브 ${next.planner.routeType} ${next.planner.hubMinutes ?? '-'}분`),
+      el('div', { class: 'next-p' }, `${THEME_LABEL[next.themeTags[0]] || ''} · ${HUB.short} 허브 ${next.planner.routeType} ${next.planner.hubMinutes ?? '-'}분`),
     ]),
   ]) : el('div', { class: 'next tex-stone organic done-all' }, [el('div', { class: 'next-h display' }, '모든 징검다리를 건넜어요 🎉')]);
 
@@ -139,7 +139,7 @@ function screenPlace(id) {
     el('div', { class: 'grad' }),
     el('a', { href: '#/', class: 'back' }, '‹'),
     el('div', { class: 'cap' }, [
-      el('div', { class: 'k' }, Store.isRequired(id) ? '공통 필수 · 종로5가 허브' : '선택 장소'),
+      el('div', { class: 'k' }, Store.isRequired(id) ? `공통 필수 · ${HUB.short} 허브` : '선택 장소'),
       el('h1', { class: 'display' }, p.name),
       el('div', { class: 'tags' }, p.themeTags.map((t) => el('span', { class: 'chip' }, THEME_LABEL[t] || t))),
     ]),
@@ -162,7 +162,7 @@ function screenPlace(id) {
   const asym = el('div', { class: 'row' }, [
     el('div', { class: 'map-card tex-paper organic' }, [el('div', { class: 'ttl' }, '네이버 지도 · 위치'), mapWrap]),
     el('div', { class: 'access' }, [
-      el('div', { class: 'a-item' }, [el('span', { class: 'a-ic' }, '📍'), el('span', {}, [el('b', {}, '종로5가 허브'), ` ${routeLabel(p.planner)}`])]),
+      el('div', { class: 'a-item' }, [el('span', { class: 'a-ic' }, '📍'), el('span', {}, [el('b', {}, `${HUB.short} 허브`), ` ${routeLabel(p.planner)}`])]),
       el('div', { class: 'a-item' }, [el('span', { class: 'a-ic' }, '🏠'), el('span', {}, p.address || '주소 — Phase1 확정')]),
       el('div', { class: 'a-item' }, [el('span', { class: 'a-ic' }, '🧭'), el('span', {}, [el('b', {}, '도착하면 직접 체크인'), ' (실시간 위치 없음)'])]),
     ]),
@@ -608,9 +608,9 @@ function screenPlanner() {
     ]);
   });
 
-  // 추천 예시 칩
+  // 추천 예시 칩 (flow=bookend 흐름 서술 — title 힌트)
   const recs = el('div', { class: 'rec-chips' }, Store.recommendedCourses.map((rc) =>
-    el('button', { class: 'rec-chip', onclick: () => { Store.applyRecommended(rc.id); render(); } }, [el('b', {}, rc.title), el('span', {}, ` +${rc.placeIds.length}곳`)])));
+    el('button', { class: 'rec-chip', title: rc.flow || '', onclick: () => { Store.applyRecommended(rc.id); render(); } }, [el('b', {}, rc.title), el('span', {}, ` +${rc.placeIds.length}곳`)])));
 
   // 선택 장소 풀(17곳, 테마 필터)
   const pool = Store.selectablePlaces().filter((p) => plannerTheme === 'all' || p.themeTags.includes(plannerTheme));
@@ -633,6 +633,7 @@ function screenPlanner() {
       el('div', { class: 'pl-head' }, [
         el('h1', { class: 'display' }, '코스 플래너'),
         el('p', { class: 'muted' }, '공통 필수 3곳은 고정, 나머지 17곳에서 우리 조가 직접 골라 순서를 정해요. (추천 예시는 참고일 뿐 자유 수정)'),
+        el('div', { class: 'hub-note' }, [el('span', { class: 'hub-ic' }, '🚩'), el('span', {}, [el('b', {}, `${HUB.name}`), ` 출발·복귀 · 최근접 ${HUB.nearestStation}`])]),
       ]),
       el('div', { class: 'sum-bar tex-stone organic' }, [
         el('div', {}, [el('b', {}, `총 ${t.count}곳`), ` · 예상 이동 약 ${t.hub}분 · 체류 약 ${t.stay}분`]),
@@ -641,6 +642,7 @@ function screenPlanner() {
       el('h2', { class: 'sec' }, '우리 조 코스'),
       el('div', { class: 'pl-list' }, rows),
       el('h2', { class: 'sec' }, '추천 예시 불러오기'),
+      el('p', { class: 'rec-note' }, `흐름 추천 — ${HUB.short} 출발 → 연동교회 묵상 → 테마 코스 → 광장시장 식사 → 허브 복귀 (자율 변경 가능)`),
       recs,
       el('h2', { class: 'sec' }, '선택 장소 담기 (17곳)'),
       filterBar,
@@ -648,6 +650,76 @@ function screenPlanner() {
       el('button', { class: 'btn block start-btn', onclick: () => { location.hash = '#/'; } }, '이 코스로 시작하기'),
     ]),
     tabbar('planner'),
+  ]);
+}
+
+// ── 화면 ⑤ 조별 저널 — 승인 사진이 채워지는 지면(비대칭 매거진, 페이지마다 리듬 변주) ──
+function journalPhotoTiles(sub, variant) {
+  // 조 업로드 사진(비공개 버킷). production은 서명 URL(그룹 게이트 Edge), 데모/미보유는 브랜디드 타일.
+  const n = sub && sub.photoRefs ? sub.photoRefs.length : (variant ? 2 : 1);
+  const tiles = [];
+  for (let i = 0; i < Math.max(1, n); i++) {
+    tiles.push(el('div', { class: 'jp-photo tex-stone' }, [
+      el('span', { class: 'jp-cam' }, '🖼'),
+      el('span', { class: 'jp-src' }, '조 업로드 · 동의 보관'),
+    ]));
+  }
+  return el('div', { class: `jp-photos ${variant ? 'grid' : 'full'}` }, tiles);
+}
+
+function screenJournal() {
+  const pages = Store.journal();
+  const crossed = Store.crossedCount();
+
+  const cover = el('header', { class: 'jr-cover tex-paper' }, [
+    el('div', { class: 'jr-k' }, '조별 탐방 저널'),
+    el('h1', { class: 'display' }, Store.group.name),
+    el('div', { class: 'jr-sub' }, `${HUB.short}에서 출발한 우리의 하루 · 건넌 징검다리 ${crossed}`),
+    el('div', { class: 'jr-rule' }),
+  ]);
+
+  let body;
+  if (!pages.length) {
+    body = el('div', { class: 'jr-empty' }, [
+      el('div', { class: 'jr-empty-art tex-paper' }, [el('span', {}, '◌')]),
+      el('p', { class: 'display' }, '첫 미션이 승인되면'),
+      el('p', { class: 'muted' }, '여기 저널의 첫 장이 채워져요. 장소에 도착해 미션을 인증해 보세요.'),
+      el('a', { href: '#/', class: 'btn' }, '홈 징검다리로'),
+    ]);
+  } else {
+    body = el('div', { class: 'jr-pages' }, pages.map((pg, i) => {
+      const variant = i % 2 === 1;            // 페이지마다 리듬 변주(풀블리드 ↔ 그리드)
+      if (pg.scope === 'course') {
+        return el('section', { class: 'jr-page course' }, [
+          el('div', { class: 'jr-no' }, `별지`),
+          el('h2', { class: 'display' }, '코스 미션'),
+          journalPhotoTiles(pg.submission, true),
+          el('p', { class: 'jr-cap' }, pg.brief || ''),
+          pg.submission && pg.submission.comment ? el('p', { class: 'jr-quote' }, `“${pg.submission.comment}”`) : null,
+        ]);
+      }
+      const rd = pg.reading;
+      const q = rd && rd.body ? (rd.body.match(/\*\*질문\.\*\*\s*([^\n]+)/) || [])[1] : null;
+      return el('section', { class: `jr-page ${variant ? 'v' : ''}` }, [
+        el('a', { href: `#/place/${pg.placeId}`, class: 'jr-no' }, `${String(i + 1).padStart(2, '0')} · ${pg.place ? pg.place.name : pg.placeId}`),
+        journalPhotoTiles(pg.submission, variant),
+        el('div', { class: 'jr-text' }, [
+          el('h2', { class: 'display' }, pg.place ? pg.place.name : pg.placeId),
+          pg.submission && pg.submission.comment ? el('p', { class: 'jr-quote' }, `“${pg.submission.comment}”`) : null,
+          q ? el('p', { class: 'jr-q' }, [el('span', { class: 'jr-q-k' }, '오늘의 질문 — '), q]) : null,
+        ]),
+      ]);
+    }));
+  }
+
+  const exportBar = pages.length ? el('div', { class: 'jr-export' }, [
+    el('button', { class: 'btn ghost block', onclick: () => alert('저널 내보내기는 학부모 동의(내보내기) 확인 후 발급됩니다. 실제 발행은 교사·관리자 승인 단계입니다.') }, '저널 내보내기 (동의 확인 후)'),
+    el('p', { class: 'jr-export-note' }, '승인된 사진만 게재 · 학부모 동의분만 외부 공유 · 삭제요청 항목 제외'),
+  ]) : null;
+
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'scroll' }, [cover, body, exportBar]),
+    tabbar('journal'),
   ]);
 }
 
@@ -669,7 +741,7 @@ function render() {
   else if (mPlace) root.appendChild(screenPlace(mPlace[1]));
   else if (h.startsWith('#/teacher')) root.appendChild(screenTeacher());
   else if (h.startsWith('#/planner')) root.appendChild(screenPlanner());
-  else if (h.startsWith('#/journal')) root.appendChild(stub('조별 저널', '저널은 D6에 구현됩니다 (승인된 조 업로드 사진이 채워지는 지면).', 'journal'));
+  else if (h.startsWith('#/journal')) root.appendChild(screenJournal());
   else root.appendChild(screenHome());
   window.scrollTo(0, 0);
   if (pendingMap) {
