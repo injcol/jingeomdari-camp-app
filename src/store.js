@@ -4,7 +4,7 @@
 //   mission_public / course_mission_public 뷰로만 조회(answer 숨김). 학생 클라이언트는 mission/course_mission 테이블 직접 조회 금지.
 //   프로젝트: fcjfmpmjkhdonaoriaxk.supabase.co (master 계정 세션 생성).
 import seed from '../data/seed.js';
-import { resizeImage } from './util.js';
+import { resizeImage, blobToBase64 } from './util.js';
 import * as Supabase from './supabase.js';
 
 const KEY = 'jgd.state.v1';
@@ -155,23 +155,24 @@ export const Store = {
       return { status: 'pending', local: true };
     }
 
-    // production: 2단계 보안 흐름 (storage v1.1) — request_upload(서버 발급 경로) → Storage 업로드 → finalize(소유권 검증)
+    // production (Plan B): service role Edge Function 'upload-photo' 1회 호출로 일괄 처리
+    //   (anon 직접 Storage POST는 정책 깨짐·소유권상 수정불가로 403 → Edge가 request_upload→storage→finalize 우회).
     try {
-      const { submissionId, groupId } = await Supabase.requestUpload(state.groupCode, missionId, scope);
-      sub.remoteId = submissionId;
-      const total = blobs.length || 1;
+      const photos = [];
       for (let i = 0; i < blobs.length; i++) {
-        const path = Supabase.photoPath(groupId, submissionId);   // {group_id}/{submission_id}/{난수}.jpg
-        await Supabase.uploadPhoto(path, blobs[i], (p) => onProgress && onProgress((i + p) / total));
-        sub.photoRefs.push(path);
+        photos.push({ content_base64: await blobToBase64(blobs[i]), content_type: blobs[i].type || 'image/jpeg' });
+        onProgress && onProgress(((i + 1) / Math.max(1, blobs.length)) * 0.5);   // 인코딩 0→50%
       }
-      await Supabase.finalizeSubmission(state.groupCode, submissionId, sub.photoRefs, comment);
+      const res = await Supabase.uploadViaEdge(state.groupCode, missionId, scope, comment, photos);
+      onProgress && onProgress(1);                                                // 업로드 완료 100%
+      sub.remoteId = res.submission_id;
+      sub.photoRefs = Array.isArray(res.photo_refs) ? res.photo_refs : [];
       sub.status = 'pending';
       if (scope === 'place' && placeId) this._markProgress(placeId, 'pending');
       save(); onPhase && onPhase('pending');
       return { status: 'pending' };
     } catch (e) {
-      // 오프라인/실패 → 보류 큐(연결 시 자동 전송). 사진은 재선택 필요(blob 미영속) → 큐에는 코멘트만.
+      // 오프라인/실패 → 보류 큐(연결 시 재선택 후 재전송). 사진 blob 미영속 → 큐엔 코멘트만.
       sub.status = 'queued'; sub.error = String(e.message || e);
       save(); onPhase && onPhase('queued');
       throw e;

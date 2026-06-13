@@ -68,3 +68,13 @@ export function resizeImage(file, maxEdge = 1600, quality = 0.82) {
     img.src = url;
   });
 }
+
+// Blob → base64 문자열(data: 프리픽스 제거). Plan B: upload-photo Edge Function 전송용(JSON body).
+export function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { const s = String(r.result || ''); const i = s.indexOf(','); resolve(i >= 0 ? s.slice(i + 1) : s); };
+    r.onerror = () => reject(new Error('blob_read_failed'));
+    r.readAsDataURL(blob);
+  });
+}

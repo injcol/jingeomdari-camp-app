@@ -45,7 +45,21 @@ export async function selectView(view, query = '') {
 export const fetchMissionsPublic = () => selectView('mission_public');
 export const fetchCourseMissionsPublic = () => selectView('course_mission_public');
 
-// ── 미션 사진 제출 2단계 흐름 (storage v1.1 보안 모델) ──
+// ── Plan B (2026-06-13): 미션 사진 업로드 = service role Edge Function 'upload-photo' ──
+//   배경: storage.objects 정책 깨짐(public. 누락) + 소유권상 수정불가 → anon 직접 Storage POST 전부 403.
+//   대체: resize→base64→upload-photo 1회 호출(서버가 request_upload→storage 업로드→finalize 일괄). 사진 URL 미반환.
+export async function uploadViaEdge(groupCode, missionId, scope, comment, photos) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/upload-photo`, {
+    method: 'POST',
+    headers: baseHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ group_code: groupCode, mission_id: missionId, scope, comment: comment || '', photos }),
+  });
+  if (!res.ok) throw new Error(`upload-photo ${res.status}: ${await res.text().catch(() => '')}`);
+  return res.json();   // { submission_id, status:'pending', photo_refs:[...] }
+}
+
+// ── (구) 미션 사진 제출 2단계 흐름 — Plan B 전환으로 직접 호출 안 함. request_upload/finalize RPC는
+//    upload-photo Edge Function이 서버측에서 재사용(검증 단일출처). 아래 wrapper는 서버 계약 문서 겸 보존. ──
 // ① requestUpload: 조코드/미션 검증 후 submission(uploaded) 발급 → { submission_id, group_id }.
 //    경로는 서버 발급 규칙 '{group_id}/{submission_id}/{난수UUID}.jpg' 로만(클라가 난수 파일명 생성).
 export async function requestUpload(code, missionId, scope) {
