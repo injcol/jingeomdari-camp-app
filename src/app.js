@@ -20,12 +20,60 @@ const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placehol
 let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
 function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
 
+// ── 점수경쟁제(#4) — 서버 집계 캐시 + 폴링(20s+진입+본인승인후). 사진/제출/정답 노출 0(집계만). ──
+let scoreCache = { board: null, loadedAt: 0, loading: false };   // leaderboard 행[]
+let compCache = { map: null, loadedAt: 0 };                       // place_completion {placeId: 완료조수}
+let boardTimer = null;                                            // #/board 폴링 인터벌
+const FRESH_MS = 8000;                                            // 중복 호출 억제 창
+
+async function loadBoard(force) {
+  if (Store.localMode()) { scoreCache.board = null; return false; }
+  if (scoreCache.loading) return false;
+  if (!force && scoreCache.board && Date.now() - scoreCache.loadedAt < FRESH_MS) return false;
+  scoreCache.loading = true;
+  try { const rows = await Store.fetchLeaderboard(); scoreCache.board = rows || []; scoreCache.loadedAt = Date.now(); return true; }
+  catch (e) { console.warn('[board] 로드 실패(무시):', e.message); return false; }
+  finally { scoreCache.loading = false; }
+}
+async function loadCompletion(force) {
+  if (Store.localMode()) { compCache.map = null; return false; }
+  if (!force && compCache.map && Date.now() - compCache.loadedAt < FRESH_MS) return false;
+  try {
+    const rows = await Store.fetchPlaceCompletion(); const map = {};
+    for (const r of rows || []) map[r.place_id] = r.completed_groups;
+    compCache.map = map; compCache.loadedAt = Date.now(); return true;
+  } catch (e) { console.warn('[completion] 로드 실패(무시):', e.message); return false; }
+}
+// 백그라운드 로드 후 캐시가 갱신됐을 때만 1회 재렌더(루프 방지 — fresh면 조기반환).
+function kickBoard() { if (Store.localMode()) return; loadBoard().then((u) => { if (u) render(); }); }
+function kickCompletion() { if (Store.localMode()) return; loadCompletion().then((u) => { if (u) render(); }); }
+
+function myBoardRow() {
+  if (!scoreCache.board || !Store.groupCode) return null;
+  return scoreCache.board.find((r) => r.group_id === Store.group.groupId) || null;
+}
+function myRank() {
+  if (!scoreCache.board || !Store.groupCode) return null;
+  const i = scoreCache.board.findIndex((r) => r.group_id === Store.group.groupId);
+  return i < 0 ? null : i + 1;
+}
+function completionOf(id) { return (compCache.map && compCache.map[id]) || 0; }
+
+// 경량 토스트(자동 소멸) — 코스 저장 실패 등 비차단 알림.
+function toast(msg) {
+  const t = el('div', { class: 'toast' }, msg);
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 320); }, 2600);
+}
+
 function tabbar(active) {
   const tab = (href, ic, label, on) => el('a', { href, class: on ? 'on' : '' }, [el('span', { class: 'ic' }, ic), label]);
   return el('nav', { class: 'tabbar' }, [
     tab('#/', '⛰', '홈', active === 'home'),
     tab('#/planner', '🗺', '코스', active === 'planner'),
     tab('#/map', '📍', '지도', active === 'map'),
+    tab('#/board', '📊', '현황', active === 'board'),
     tab('#/journal', '📖', '저널', active === 'journal'),
   ]);
 }
@@ -68,6 +116,25 @@ function buildCrossing(course, nextId) {
   return wrap;
 }
 
+// 홈 점수·순위 배지 — 돌물 진행 시각화와 별개로 추가(대체 아님). #/board로 연결.
+function scoreBadge() {
+  if (Store.localMode()) {
+    return el('a', { href: '#/board', class: 'score-badge tex-stone organic local' }, [
+      el('div', { class: 'sb-main' }, [el('span', { class: 'sb-pts' }, String(Store.localScore())), el('span', { class: 'sb-unit' }, '점')]),
+      el('div', { class: 'sb-side' }, [el('div', { class: 'sb-k' }, '우리 조 점수 (예상)'), el('div', { class: 'sb-rank' }, '전체 순위는 온라인에서 →')]),
+    ]);
+  }
+  const row = myBoardRow(), rank = myRank(), total = scoreCache.board ? scoreCache.board.length : 0;
+  const sc = row ? row.score : 0, done = row ? row.places_completed : 0;
+  return el('a', { href: '#/board', class: 'score-badge tex-stone organic' }, [
+    el('div', { class: 'sb-main' }, [el('span', { class: 'sb-pts' }, String(sc)), el('span', { class: 'sb-unit' }, '점')]),
+    el('div', { class: 'sb-side' }, [
+      el('div', { class: 'sb-k' }, '우리 조 점수'),
+      el('div', { class: 'sb-rank' }, rank ? (done > 0 ? `${total}조 중 ${rank}위 · ${done}곳 통과 →` : '아직 첫 징검다리 전 →') : '전체 현황 보기 →'),
+    ]),
+  ]);
+}
+
 function screenHome() {
   const course = Store.course;
   const nextId = Store.nextPlace();
@@ -93,7 +160,8 @@ function screenHome() {
       el('div', { class: 'k' }, '오늘 우리 조의 여정'),
       el('h1', { class: 'display' }, [`강을 건너며 `, el('em', {}, '기록하다')]),
     ]),
-    el('div', { class: 'progress-note' }, `건넌 징검다리 ${Store.crossedCount()} · ${course.length}곳 코스 · 점수 없음`),
+    el('div', { class: 'progress-note' }, `건넌 징검다리 ${Store.crossedCount()} · ${course.length}곳 코스`),
+    scoreBadge(),
     buildCrossing(course, nextId),
     nextCard,
   ];
@@ -179,6 +247,18 @@ function screenPlace(id) {
     el('a', { class: 'btn rb-btn', href: kakao || '#', target: '_blank', rel: 'noopener' }, '카카오맵'),
   ]);
 
+  // 점수 힌트(§3-4): 기본점 + "현재 N개 조 완료 → 지금 가면 P/(N+1)점" (전략적 분산 유도). N=place_completion 폴링.
+  const pts = Store.basePointsOf(id);
+  const nDone = completionOf(id);
+  const gain = Math.round(pts / (nDone + 1));
+  const pointHint = el('div', { class: 'point-hint tex-water organic' }, [
+    el('div', { class: 'ph-pts' }, [el('b', {}, String(pts)), el('small', {}, '기본점')]),
+    el('div', { class: 'ph-body' }, [
+      el('div', { class: 'ph-k' }, nDone > 0 ? `지금 ${nDone}개 조 통과` : '아직 아무 조도 안 지났어요'),
+      el('div', { class: 'ph-gain' }, [`지금 가면 `, el('b', {}, `${gain}점`), nDone > 0 ? el('small', {}, ` (${pts}÷${nDone + 1})`) : el('small', {}, ' (단독)')]),
+    ]),
+  ]);
+
   const rd = Store.readingFor(id);
   const reading = el('section', { class: 'reading tex-paper' }, [
     el('div', { class: 'k' }, '읽을거리 · 묵상'),
@@ -210,7 +290,7 @@ function screenPlace(id) {
   ]);
 
   return el('main', { class: 'phone tex-paper col' }, [
-    el('div', { class: 'scroll' }, [hero, el('div', { class: 'sheet' }, [asym, reading, missions, checkin])]),
+    el('div', { class: 'scroll' }, [hero, el('div', { class: 'sheet' }, [asym, pointHint, reading, missions, checkin])]),
     routeBar,
     tabbar(''),
   ]);
@@ -602,7 +682,7 @@ function screenPlanner() {
       el('span', { class: 'pl-no' }, String(idx + 1)),
       el('div', { class: 'pl-info' }, [
         el('div', { class: 'pl-name' }, [p ? p.name : placeId, req ? el('span', { class: 'lock' }, ' 🔒 공통필수') : null]),
-        el('div', { class: 'pl-sub' }, p ? `${ROUTE_ICON[p.planner.routeType] || p.planner.routeType} · 허브 ${p.planner.hubMinutes ?? '-'}분 · 체류 ~${p.planner.stayMinutes ?? '-'}분` : ''),
+        el('div', { class: 'pl-sub' }, p ? `${ROUTE_ICON[p.planner.routeType] || p.planner.routeType} · 허브 ${p.planner.hubMinutes ?? '-'}분 · 체류 ~${p.planner.stayMinutes ?? '-'}분 · 🏅 ${Store.basePointsOf(placeId)}점` : ''),
       ]),
       el('div', { class: 'pl-ctl' }, [
         el('button', { class: 'mini', disabled: idx === 0 ? '' : null, onclick: () => { Store.move(placeId, -1); render(); } }, '↑'),
@@ -622,9 +702,11 @@ function screenPlanner() {
     el('button', { class: `chip ${plannerTheme === k ? 'on' : ''}`, onclick: () => { plannerTheme = k; render(); } }, label)));
   const poolGrid = el('div', { class: 'pool' }, pool.map((p) => {
     const added = Store.inCourse(p.placeId);
+    const ppts = Store.basePointsOf(p.placeId), pn = completionOf(p.placeId);
     return el('div', { class: `pcard tex-paper organic ${added ? 'added' : ''}` }, [
       el('div', { class: 'pc-name display' }, p.name),
       el('div', { class: 'pc-sub' }, `${ROUTE_ICON[p.planner.routeType] || ''} · 허브 ${p.planner.hubMinutes ?? '-'}분${p.indoorCooled ? ' · 냉방' : ''}`),
+      el('div', { class: 'pc-pts' }, `🏅 ${ppts}점${pn > 0 ? ` · ${pn}개 조 통과 → 지금 ${Math.round(ppts / (pn + 1))}점` : ' · 단독 시 만점'}`),
       el('div', { class: 'pc-tags' }, p.themeTags.map((tg) => el('span', { class: 'chip' }, THEME_LABEL[tg] || tg))),
       added
         ? el('button', { class: 'btn ghost block', onclick: () => { Store.removePlace(p.placeId); render(); } }, '담음 ✓ (빼기)')
@@ -641,7 +723,7 @@ function screenPlanner() {
       ]),
       el('div', { class: 'sum-bar tex-stone organic' }, [
         el('div', {}, [el('b', {}, `총 ${t.count}곳`), ` · 예상 이동 약 ${t.hub}분 · 체류 약 ${t.stay}분`]),
-        el('div', { class: 'sum-note' }, overloaded ? '⚠ 이동·체류가 많아요 — 폭염·시간을 고려하세요 (막지 않음)' : '대략값 · 점수 없음'),
+        el('div', { class: 'sum-note' }, overloaded ? '⚠ 이동·체류가 많아요 — 폭염·시간을 고려하세요 (막지 않음)' : '이동·체류 대략값 · 참고용'),
       ]),
       el('h2', { class: 'sec' }, '우리 조 코스'),
       el('div', { class: 'pl-list' }, rows),
@@ -651,7 +733,11 @@ function screenPlanner() {
       el('h2', { class: 'sec' }, '선택 장소 담기 (17곳)'),
       filterBar,
       pool.length ? poolGrid : el('p', { class: 'muted pad0' }, '이 테마의 남은 장소가 없어요.'),
-      el('button', { class: 'btn block start-btn', onclick: () => { location.hash = '#/'; } }, '이 코스로 시작하기'),
+      el('button', { class: 'btn block start-btn', onclick: async (e) => {
+        const btn = e.currentTarget; btn.disabled = true; const orig = btn.textContent; btn.textContent = '저장 중…';
+        try { await Store.saveCourse(); location.hash = '#/'; }       // ★버그#2: 서버 저장 후 이동(재입장 유지)
+        catch (err) { toast('코스 저장에 실패했어요. 잠시 후 다시 시도해 주세요.'); btn.disabled = false; btn.textContent = orig; }
+      } }, '이 코스로 시작하기'),
     ]),
     tabbar('planner'),
   ]);
@@ -834,6 +920,48 @@ function screenAllMap() {
   ]);
 }
 
+// ── 전체 현황(#/board) — 전 조 실시간 순위·점수·완료 장소 수(집계만). 청소년부 정서: 깔끔·격려 톤. ──
+function screenBoard() {
+  const head = el('div', { class: 'pl-head' }, [
+    el('h1', { class: 'display' }, '전체 현황'),
+    el('p', { class: 'muted' }, '조별 점수와 완료한 장소 수예요. 멀리 간 장소일수록 점수가 높고, 같은 곳에 여러 조가 가면 나눠 가져요.'),
+  ]);
+
+  if (Store.localMode()) {
+    return el('main', { class: 'phone tex-paper col' }, [
+      el('div', { class: 'scroll' }, [head,
+        el('div', { class: 'board-local tex-stone organic' }, [
+          el('div', { class: 'bl-pts' }, [el('b', {}, String(Store.localScore())), ' 점 (예상)']),
+          el('p', { class: 'muted' }, '지금은 둘러보기(로컬) 모드예요. 선생님께 받은 우리 조 링크로 입장하면 전체 조 실시간 순위가 표시됩니다.'),
+        ]),
+      ]),
+      tabbar('board'),
+    ]);
+  }
+
+  const board = scoreCache.board;
+  let body;
+  if (!board) body = el('div', { class: 't-skel' }, '순위를 불러오는 중…');
+  else if (!board.length) body = el('div', { class: 't-empty' }, [el('div', { class: 'te-ic' }, '⛰'), el('p', {}, '아직 첫 징검다리를 건넌 조가 없어요. 우리 조가 먼저 인증해 볼까요?')]);
+  else {
+    const myId = Store.group.groupId;
+    body = el('div', { class: 'board-list' }, board.map((r, i) => {
+      const me = r.group_id === myId;
+      return el('div', { class: `board-row ${me ? 'me' : ''}` }, [
+        el('span', { class: `br-rank r${i + 1}` }, String(i + 1)),
+        el('span', { class: 'br-dot', style: `background:${r.color || 'var(--river-500)'}` }),
+        el('span', { class: 'br-name' }, [el('span', { class: 'br-nm' }, r.group_name), me ? el('span', { class: 'br-you' }, '우리 조') : null]),
+        el('span', { class: 'br-done' }, `${r.places_completed}곳 통과`),
+        el('span', { class: 'br-score' }, [el('b', {}, String(r.score)), '점']),
+      ]);
+    }));
+  }
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'scroll' }, [head, el('p', { class: 'board-note muted' }, '약 20초마다 자동 갱신 · 점수 동률은 완료 장소 수 순'), body]),
+    tabbar('board'),
+  ]);
+}
+
 function stub(title, msg, tab) {
   return el('main', { class: 'phone tex-paper col' }, [
     el('div', { class: 'pad' }, [el('h1', { class: 'display' }, title), el('p', { class: 'muted' }, msg)]),
@@ -851,13 +979,21 @@ function render() {
   if (!mMission && draft) { draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = null; }  // 미션 이탈 시 드래프트 정리
   if (mJoin) root.appendChild(screenJoin(mJoin[1]));
   else if (mMission) root.appendChild(screenMission(mMission[1]));
-  else if (mPlace) root.appendChild(screenPlace(mPlace[1]));
+  else if (mPlace) { root.appendChild(screenPlace(mPlace[1])); kickCompletion(); }
   else if (h.startsWith('#/teacher')) root.appendChild(screenTeacher());
   else if (h.startsWith('#/map')) root.appendChild(screenAllMap());
-  else if (h.startsWith('#/planner')) root.appendChild(screenPlanner());
+  else if (h.startsWith('#/planner')) { root.appendChild(screenPlanner()); kickCompletion(); }
+  else if (h.startsWith('#/board')) root.appendChild(screenBoard());
   else if (h.startsWith('#/journal')) { root.appendChild(screenJournal()); requestAnimationFrame(() => loadJournalPhotos()); }
-  else root.appendChild(screenHome());
+  else { root.appendChild(screenHome()); kickBoard(); }
   window.scrollTo(0, 0);
+  // #/board 실시간 폴링(20s) — 진입 시 즉시 로드 + 인터벌, 이탈 시 정리.
+  if (h.startsWith('#/board')) {
+    kickBoard();
+    if (!Store.localMode() && !boardTimer) boardTimer = setInterval(() => {
+      loadBoard(true).then((u) => { if (u && location.hash.startsWith('#/board')) render(); });
+    }, 20000);
+  } else if (boardTimer) { clearInterval(boardTimer); boardTimer = null; }
   if (pendingMap) {
     const m = pendingMap;
     requestAnimationFrame(() => {
@@ -882,9 +1018,9 @@ function render() {
 
 window.addEventListener('hashchange', render);
 // 재연결 시 승인/보완 상태 동기화(production). 로컬모드는 no-op.
-window.addEventListener('online', () => { Store.refreshStatus().then(render).catch(() => {}); });
+window.addEventListener('online', () => { Store.refreshStatus().then(() => loadBoard(true)).then(render).catch(() => {}); });
 render();
-// 초기 동기화: 이미 입장한 production 상태면 서버에서 코스·진행 갱신(새로고침 유지).
+// 초기 동기화: 이미 입장한 production 상태면 서버에서 코스·진행 갱신(새로고침 유지) + 점수 갱신.
 if (!Store.localMode() && !location.hash.startsWith('#/join')) {
-  Store.loadRemoteCourse().then(() => Store.refreshStatus()).then(render).catch(() => {});
+  Store.loadRemoteCourse().then(() => Store.refreshStatus()).then(() => loadBoard(true)).then(render).catch(() => {});
 }

@@ -10,23 +10,29 @@ import * as Supabase from './supabase.js';
 const KEY = 'jgd.state.v1';
 const REQUIRED = seed.courses.find((c) => c.type === 'common')?.placeIds ?? ['B11', 'D5', 'C3'];
 
-function demoState() {
-  // 시연용 조(3조) + 공통필수 코스. 실제 조 입장/코스플래너는 D2~D3.
+function freshState() {
+  // 빈 진행 상태 — 프로덕션 신규/미입장 초기값. ★버그#1: 가짜 '완료' 더미 없음(서버 권위로만 점등).
   return {
     group: { groupId: 'demo-3', name: '3조', color: '#1f6f74' },
     groupCode: null,                  // 실제 RPC용 조 코드(입장 시 설정). null=로컬 데모.
     // group_course_place: placeId + sortOrder
     course: [...REQUIRED, 'A8'].map((placeId, i) => ({ placeId, sortOrder: i })),
     // progress: placeId -> { checkedIn, status: none|pending|approved }
-    progress: {
-      D5: { checkedIn: true, status: 'approved' },
-      B11: { checkedIn: true, status: 'approved' },
-      C3: { checkedIn: true, status: 'pending' },
-    },
+    progress: {},
     // submission(미션 인증) 상태머신: missionId -> { status, scope, placeId, photoRefs[], comment, teacherNote, remoteId, createdAt }
     //   status: idle → uploading → pending → approved | revise (+ queued: 오프라인 보류)
     submissions: {},
   };
+}
+function demoState() {
+  // 데모환경(file:// 또는 Supabase 미설정) 전용 — 상태머신·돌물 시각화 미리보기용 더미 진행.
+  const s = freshState();
+  s.progress = {
+    D5: { checkedIn: true, status: 'approved' },
+    B11: { checkedIn: true, status: 'approved' },
+    C3: { checkedIn: true, status: 'pending' },
+  };
+  return s;
 }
 
 let state = normalize(load());
@@ -35,7 +41,8 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return demoState();
+  // 저장상태 없음 → 데모환경만 더미 진행, 프로덕션은 빈 progress(버그#1: 입장 전 가짜 완료 차단).
+  return isDemoEnv() ? demoState() : freshState();
 }
 function normalize(s) {                 // 구버전 영속 상태에 신규 필드 보강
   if (!s.submissions) s.submissions = {};
@@ -92,7 +99,10 @@ export const Store = {
     const g = Array.isArray(rows) ? rows[0] : rows;
     if (!g || !g.group_id) throw new Error('invalid_group_code');
     state.group = { groupId: g.group_id, name: g.name, color: g.color || '#1f6f74' };
-    state.groupCode = code; save();
+    state.groupCode = code;
+    state.progress = {};            // ★버그#1: 입장/재입장 시 더미·타조 잔재 0. 서버 권위로만 재구성.
+    state.submissions = {};
+    save();
     try { await this.loadRemoteCourse(); } catch {}
     try { await this.refreshStatus(); } catch {}
     return g;
@@ -102,6 +112,14 @@ export const Store = {
     if (Array.isArray(rows) && rows.length) {
       state.course = rows.map((r) => ({ placeId: r.place_id, sortOrder: r.sort_order })); save();
     }
+  },
+  // ★버그#2: 코스 서버 저장(전체 교체). 기존 set_my_course RPC 재사용(공통필수3 강제·place검증·anon grant).
+  //   localMode면 no-op(이미 localStorage 영속) → 재입장 시 loadRemoteCourse가 빈/기본코스로 덮어쓰는 초기화 방지.
+  async saveCourse() {
+    if (isLocalMode()) return { local: true };
+    const ordered = this.course.map((c) => c.placeId);   // sort_order 순서 → 배열 인덱스=sort_order
+    await Supabase.rpc('set_my_course', { p_code: state.groupCode, p_place_ids: ordered });
+    return { saved: true };
   },
   // 미션 메타: 콘텐츠는 오프라인 seed 사용(클라엔 정답 없음). production 보강 시에도 *_public 뷰만(supabase.js가 강제).
   missionMeta(missionId) {
@@ -214,6 +232,26 @@ export const Store = {
     if (status === 'approved' && sub.scope === 'place' && sub.placeId) this._markProgress(sub.placeId, 'approved');
     save();
   },
+
+  // ── 점수경쟁제 (#4) — 기본점수=거리(허브 이동시간), 분배=균등 P/k. 서버가 권위(leaderboard RPC). ──
+  // 기본점수: place.basePoints(worker1 표 확정값) 우선, 없으면 공식 max(10, round(hubMinutes/5)*5) 폴백.
+  basePointsOf(id) {
+    const p = this.place(id); if (!p) return 0;
+    if (p.basePoints != null) return p.basePoints;
+    const hm = (p.planner && p.planner.hubMinutes) || 0;
+    return Math.max(10, Math.round(hm / 5) * 5);
+  },
+  // 로컬/데모 미리보기 점수(서버 미연동 시): 승인된 장소 base_points 합(분배 미반영=낙관 상한). 순위는 온라인 전용.
+  localScore() {
+    let sc = 0;
+    for (const { placeId } of this.course) {
+      if (this.progress(placeId).status === 'approved') sc += this.basePointsOf(placeId);
+    }
+    return Math.round(sc);
+  },
+  // 서버 집계 조회(읽기·집계만 — 사진/제출/정답 노출 0). localMode면 null.
+  async fetchLeaderboard() { if (isLocalMode()) return null; return Supabase.rpc('leaderboard', {}); },
+  async fetchPlaceCompletion() { if (isLocalMode()) return null; return Supabase.rpc('place_completion', {}); },
 
   // ── 코스 플래너 (D3) — group_course_place 동형. 공통필수 3곳 자동포함·삭제불가·정렬만 ──
   get requiredIds() { return [...REQUIRED]; },

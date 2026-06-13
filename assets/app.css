@@ -421,3 +421,58 @@
 .pm-ph-ic{font-size:26px;}
 .pm-empty{grid-column:1/-1; padding:30px; text-align:center; color:var(--stone-d);}
 .pm-note{margin-top:12px; font-size:12px; color:var(--stone-d); line-height:1.55;}
+
+/* ───────── 점수경쟁제(#4) — 홈 배지 · 전체현황 · 장소/플래너 힌트 · 토스트 ───────── */
+/* 홈 점수·순위 배지 (돌물 시각화와 별개 추가) */
+/* R1②: 돌·물 진행 시각화가 메인 — 배지는 tex-stone 반투명 보조 위계(그라디언트 강세 제거) */
+.score-badge{display:flex; align-items:center; gap:14px; margin:6px 16px 0; padding:12px 15px;
+  background:rgba(163,154,139,.20); color:var(--ink); text-decoration:none;
+  border:1px solid var(--line); box-shadow:none;}
+.score-badge.local{background:rgba(163,154,139,.13);}
+.sb-main{display:flex; align-items:baseline; gap:3px; flex:none;}
+.sb-pts{font-size:28px; font-weight:800; line-height:1; font-family:var(--display,inherit); color:var(--river-700);}
+.sb-unit{font-size:14px; color:var(--stone-d);}
+.sb-side{display:flex; flex-direction:column; gap:2px; min-width:0;}
+.sb-k{font-size:12px; letter-spacing:.08em; color:var(--stone-d);}
+.sb-rank{font-size:14px; font-weight:700; color:var(--ink-soft);}
+
+/* 전체 현황(#/board) */
+.board-note{font-size:12px; margin:2px 18px 10px;}
+.board-list{display:flex; flex-direction:column; gap:8px; padding:0 16px 8px;}
+.board-row{display:flex; align-items:center; gap:11px; padding:11px 13px; border:1px solid var(--line);
+  border-radius:13px; background:rgba(36,30,23,.03);}
+.board-row.me{border-color:var(--river-500); background:rgba(31,111,116,.08); box-shadow:0 0 0 1px var(--river-500) inset;}
+.br-rank{width:24px; flex:none; text-align:center; font-weight:800; font-size:15px; color:var(--stone-d);}
+/* R1⑥: 돌·물 테마색(금/은/동 대신) — 경쟁압 완화, 청소년부 정서 */
+.br-rank.r1{color:var(--river-700);} .br-rank.r2{color:var(--moss);} .br-rank.r3{color:var(--stone-d);}
+.br-dot{width:13px; height:13px; flex:none; border-radius:50%;}
+.br-name{flex:1; min-width:0; font-weight:700; font-size:15px; display:flex; align-items:center; gap:7px;}
+/* R1④: 긴 조 이름 말줄임(겹침 방지) */
+.br-nm{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.br-you{font-size:10.5px; font-weight:700; color:var(--river-700); background:rgba(31,111,116,.14); padding:2px 7px; border-radius:999px;}
+.br-done{font-size:12.5px; color:var(--stone-d); flex:none;}
+.br-score{flex:none; font-size:13px; color:var(--ink-soft);}
+.br-score b{font-size:17px; color:var(--river-900);}
+.board-local{margin:8px 16px; padding:18px; text-align:center;}
+.board-local .bl-pts{font-size:18px; color:#f3ecdd; margin-bottom:8px;}
+.board-local .bl-pts b{font-size:30px; font-weight:800;}
+.board-local p{color:rgba(243,236,221,.85); font-size:13.5px; line-height:1.6;}
+
+/* 장소 상세 점수 힌트 */
+.point-hint{display:flex; align-items:center; gap:14px; margin:0 0 4px; padding:12px 15px; color:#f3ecdd;}
+.point-hint .ph-pts{display:flex; flex-direction:column; align-items:center; flex:none; line-height:1.05;}
+.point-hint .ph-pts b{font-size:26px; font-weight:800;}
+.point-hint .ph-pts small{font-size:11px; opacity:.8;}
+.point-hint .ph-body{display:flex; flex-direction:column; gap:2px;}
+.point-hint .ph-k{font-size:12.5px; color:rgba(243,236,221,.78);}
+.point-hint .ph-gain{font-size:15px; font-weight:700;}
+.point-hint .ph-gain small{font-weight:400; opacity:.78; font-size:12.5px;}
+
+/* 플래너 카드 점수 라인 */
+.pc-pts{font-size:12.5px; color:var(--moss); font-weight:600;}
+
+/* 토스트 */
+.toast{position:fixed; left:50%; bottom:88px; transform:translate(-50%,12px); z-index:90;
+  background:var(--river-900); color:#f3ecdd; font-size:14px; padding:11px 17px; border-radius:12px;
+  box-shadow:0 8px 22px -8px rgba(0,0,0,.5); opacity:0; transition:opacity .28s, transform .28s; max-width:84%; text-align:center;}
+.toast.show{opacity:1; transform:translate(-50%,0);}
