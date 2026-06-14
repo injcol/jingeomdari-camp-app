@@ -82,6 +82,12 @@ export const Teacher = {
     if (isLocalMode()) return boardFromMock();
     return Supabase.rpc('teacher_board', { p_teacher_code: tcode });
   },
+  // R5 #1: 전 조 제출물(승인·대기 포함, hidden 제외) — 사진 갤러리용. 최신순.
+  async submissions() {
+    if (isLocalMode()) return M().subs.filter((s) => s.status !== 'queued' && !s.hidden)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return Supabase.rpc('teacher_submissions', { p_teacher_code: tcode });
+  },
   async review(sid, status, note) {
     if (isLocalMode()) { const s = M().subs.find((x) => x.submission_id === sid); if (s) { s.status = status; s.teacher_note = note || null; } saveMock(); return; }
     return Supabase.rpc('teacher_review', { p_teacher_code: tcode, p_submission_id: sid, p_status: status, p_note: note || null });

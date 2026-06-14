@@ -191,6 +191,26 @@ export const Store = {
     state.progress[placeId] = pr; save();
   },
 
+  // R5 #2: 승인 대기(pending/revise) 제출 취소 → 철회·재제출 가능. approved는 거부(서버에서도 차단).
+  async cancelSubmission(missionId) {
+    const sub = state.submissions[missionId];
+    if (!sub) return { cancelled: false };
+    if (sub.status === 'approved') throw new Error('not_cancellable');
+    if (!isLocalMode()) {
+      if (!sub.remoteId) throw new Error('no_remote_id');
+      await Supabase.rpc('cancel_submission', { p_code: state.groupCode, p_submission_id: sub.remoteId });
+    }
+    delete state.submissions[missionId];
+    // 해당 장소가 pending(미승인)이었으면 진행 표시 해제(승인분은 건드리지 않음).
+    if (sub.scope === 'place' && sub.placeId) {
+      const pr = state.progress[sub.placeId];
+      if (pr && pr.status === 'pending') pr.status = 'none';
+    }
+    save();
+    if (!isLocalMode()) { try { await this.refreshStatus(); } catch {} }
+    return { cancelled: true };
+  },
+
   // production 상태 동기화: get_my_status RPC → 서버 권위로 submissions/progress 재구성. 로컬모드는 no-op.
   async refreshStatus() {
     if (isLocalMode()) return;

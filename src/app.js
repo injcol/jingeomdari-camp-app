@@ -13,8 +13,8 @@ let plannerTheme = 'all';   // 코스 플래너 테마 필터(로컬 UI 상태)
 let pendingMap = null;      // 렌더 후 초기화할 네이버 지도 {lat,lng,name}
 let pendingAllMap = false;   // 렌더 후 전체지도 초기화 플래그
 let draft = null;           // 미션 인증 드래프트 { files[], previews[], comment, uploading, progress }
-let teacherTab = 'queue';   // 교사 관리자 탭 queue|board (R4 ①: 동의 관리 탭 제거)
-let teacherData = { queue: null, board: null, loading: false, error: null, loaded: false };
+let teacherTab = 'queue';   // 교사 탭 queue|camp(전체현황)|board(조별현황)|photos(사진) — R5
+let teacherData = { queue: null, board: null, gallery: null, loading: false, error: null, loaded: false };
 let photoModal = null;      // 사진 상세 모달 { refs, group, label, submissionId, urls }
 const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placeholder(매니페스트 §6 worker2 지정). url 미확정 19곳 노출
 let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
@@ -362,6 +362,7 @@ function screenMission(missionId) {
         sub.comment ? el('p', { class: 'r-comment' }, `“${sub.comment}”`) : null,
       ]),
       ...demoReviewControls(missionId),
+      el('button', { class: 'btn ghost block m-cancel', onclick: () => doCancel(missionId) }, '제출 취소하고 다시 올리기'),
       el('a', { href: backHref, class: 'btn ghost block' }, '장소로 돌아가기'),
     ];
   } else if (sub.status === 'revise') {
@@ -462,6 +463,12 @@ async function doSubmit(missionId) {
     draft.uploading = false; render();    // queued/실패 상태는 store가 기록 → 화면 갱신
   }
 }
+// R5 #2: 승인 대기 제출 취소 → 철회·재제출 가능.
+async function doCancel(missionId) {
+  if (!confirm('제출을 취소할까요? 올린 사진·기록이 지워지고 다시 올릴 수 있어요.')) return;
+  try { await Store.cancelSubmission(missionId); resetDraft(); render(); }
+  catch (e) { toast('취소에 실패했어요. 잠시 후 다시 시도해 주세요.'); }
+}
 // (데모) 로컬모드에서 교사 승인/보완 미리보기 — 상태머신 UI 확인용. production엔 미표시.
 function demoReviewControls(missionId) {
   if (!Store.localMode()) return [];
@@ -472,12 +479,12 @@ function demoReviewControls(missionId) {
   ])];
 }
 
-// ── 화면 ⑥ 교사 관리자 — 코드 게이트 · 승인 큐 · 조별 현황 (R4 ①: 동의 관리 제거) ──
+// ── 화면 ⑥ 교사 — 승인 큐 · 전체 현황(협동) · 조별 현황 · 사진 갤러리 (R5 종합 옵저버) ──
 async function loadTeacher() {
   teacherData.loading = true; teacherData.error = null; render();
   try {
-    const queue = await Teacher.queue();      // 전체 현황은 camp_progress(campCache)로 — teacher_board 미사용
-    teacherData = { queue, loading: false, error: null, loaded: true };
+    const [queue, board, gallery] = await Promise.all([Teacher.queue(), Teacher.board(), Teacher.submissions()]);
+    teacherData = { queue, board, gallery, loading: false, error: null, loaded: true };
   } catch (e) {
     teacherData = { ...teacherData, loading: false, error: String(e.message || e), loaded: true };
     if (/invalid_teacher_code/.test(teacherData.error)) Teacher.clear();  // 코드 오류 → 게이트로
@@ -486,22 +493,27 @@ async function loadTeacher() {
 }
 async function teacherAct(fn) { try { await fn(); } catch (e) { teacherData.error = String(e.message || e); } await loadTeacher(); }
 
+const TEACHER_TABS = ['queue', 'camp', 'board', 'photos'];
 function screenTeacher() {
   if (!Teacher.code) return teacherGate();
   if (!teacherData.loaded && !teacherData.loading) { loadTeacher(); }  // 최초 진입 시 로드
-  teacherTab = ((location.hash.match(/^#\/teacher\/(\w+)/) || [])[1] === 'board') ? 'board' : 'queue';  // queue|board만
+  const hint = (location.hash.match(/^#\/teacher\/(\w+)/) || [])[1];
+  teacherTab = TEACHER_TABS.includes(hint) ? hint : 'queue';
 
   const tabs = el('div', { class: 't-tabs' }, [
-    ['queue', '승인 큐'], ['board', '전체 현황'],
+    ['queue', '승인 큐'], ['camp', '전체 현황'], ['board', '조별 현황'], ['photos', '사진'],
   ].map(([k, label]) => {
-    const n = k === 'queue' && teacherData.queue ? teacherData.queue.length : null;
+    const n = k === 'queue' && teacherData.queue ? teacherData.queue.length
+      : (k === 'photos' && teacherData.gallery ? teacherData.gallery.length : null);
     return el('button', { class: `t-tab ${teacherTab === k ? 'on' : ''}`, onclick: () => { location.hash = k === 'queue' ? '#/teacher' : `#/teacher/${k}`; } },
       [label, n ? el('span', { class: 't-badge' }, String(n)) : null]);
   }));
 
   let content;
-  if (teacherTab === 'board') content = teacherCampTab();
+  if (teacherTab === 'camp') content = teacherCampTab();
   else if (teacherData.loading && !teacherData.queue) content = el('div', { class: 't-skel' }, '불러오는 중…');
+  else if (teacherTab === 'board') content = teacherBoard();
+  else if (teacherTab === 'photos') content = teacherGallery();
   else content = teacherQueue();
 
   const errBar = teacherData.error && !/invalid_teacher_code/.test(teacherData.error)
@@ -511,7 +523,7 @@ function screenTeacher() {
   return el('main', { class: 'phone tex-paper col' }, [
     el('header', { class: 't-head' }, [
       el('div', {}, [el('div', { class: 't-k' }, '교사 관리자'), el('h1', { class: 'display' }, '인증 검토 · 현황')]),
-      el('button', { class: 'mini', onclick: () => { Teacher.clear(); teacherData = { queue: null, board: null, loading: false, error: null, loaded: false }; render(); } }, '나가기'),
+      el('button', { class: 'mini', onclick: () => { Teacher.clear(); teacherData = { queue: null, board: null, gallery: null, loading: false, error: null, loaded: false }; render(); } }, '나가기'),
     ]),
     tabs, errBar,
     el('div', { class: 'scroll t-body' }, [content]),
@@ -582,6 +594,57 @@ function teacherCampTab() {
   kickCamp();
   const d = campCache.data;
   return d ? campBoardBody(d, null) : el('div', { class: 't-skel' }, '전체 현황을 불러오는 중…');
+}
+
+// R5 #1: 조별 현황 부활 — teacher_board 카운트표(조별 승인/대기/체크인/최근활동).
+function teacherBoard() {
+  const b = teacherData.board || [];
+  if (!b.length) return el('div', { class: 't-skel' }, '불러오는 중…');
+  return el('div', { class: 't-board' }, b.map((g) => {
+    const total = g.total_places || 0, done = g.approved_count || 0;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const stale = (g.pending_count || 0) > 0 && (!g.last_activity || (Date.now() - new Date(g.last_activity).getTime()) > 45 * 60000);
+    return el('div', { class: `tb-row ${stale ? 'stale' : ''}` }, [
+      el('div', { class: 'tb-head' }, [
+        el('span', { class: 'tb-dot', style: `background:${g.color || 'var(--river-500)'}` }),
+        el('b', {}, g.group_name),
+        el('span', { class: 'tb-meta' }, `완료 ${done}/${total} · 체크인 ${g.checked_in_count || 0}`),
+      ]),
+      el('div', { class: 'tb-track' }, [el('div', { class: 'tb-fill', style: `width:${pct}%; background:${g.color || 'var(--river-500)'}` })]),
+      el('div', { class: 'tb-foot' }, [
+        (g.pending_count || 0) > 0 ? el('span', { class: 'tb-pend' }, `승인 대기 ${g.pending_count}`) : el('span', { class: 'tb-clear' }, '대기 없음'),
+        el('span', { class: 'tb-act' }, g.last_activity ? `최근 ${fmtAgo(g.last_activity)}` : '활동 없음'),
+        stale ? el('span', { class: 'tb-stale' }, '⚠ 정체') : null,
+      ]),
+    ]);
+  }));
+}
+
+// R5 #1: 사진 갤러리 — 전 조 제출물(승인·대기 포함, hidden 제외). 실제 이미지=teacher-photo 서명URL(모달). 읽기전용+숨김.
+const STAT_LABEL = { pending: '승인 대기', approved: '승인됨', revise: '보완요청', uploaded: '업로드 중' };
+function teacherGallery() {
+  if (teacherData.loading && !teacherData.gallery) return el('div', { class: 't-skel' }, '불러오는 중…');
+  const g = teacherData.gallery || [];
+  if (!g.length) return el('div', { class: 't-empty' }, [el('div', { class: 'te-ic' }, '📷'), el('p', {}, '아직 제출된 사진이 없어요.')]);
+  return el('div', { class: 't-queue' }, g.map((s) => {
+    const where = s.mission_scope === 'course' ? '코스 미션' : Teacher.placeName(s.place_id);
+    const n = (s.photo_refs || []).length;
+    return el('article', { class: 't-card' }, [
+      el('div', { class: 'tc-top' }, [
+        el('span', { class: 'tc-grp' }, s.group_name),
+        el('span', { class: 'tc-where' }, where),
+        el('span', { class: `tc-stat st-${s.status}` }, STAT_LABEL[s.status] || s.status),
+        el('span', { class: 'tc-time' }, fmtAgo(s.created_at)),
+      ]),
+      el('div', { class: 'tc-mission' }, Teacher.missionLabel(s.mission_id)),
+      el('button', { class: 'tc-thumbs', onclick: () => { photoModal = { refs: s.photo_refs || [], group: s.group_name, label: where, submissionId: s.submission_id, urls: null, loading: false, error: null }; render(); } },
+        [el('span', { class: 'tt-ic' }, '🖼'), `사진 ${n}장 보기`]),
+      s.comment ? el('div', { class: 'tc-comment' }, `“${s.comment}”`) : null,
+      el('div', { class: 'tc-acts2' }, [   // 읽기전용 + 부적절 콘텐츠 숨김만
+        el('button', { class: 'tc-hide', onclick: () => { if (confirm('이 사진을 숨길까요? (갤러리·저널·현황에서 제외)')) teacherAct(() => Teacher.hide(s.submission_id, true)); } }, '숨김'),
+      ]),
+    ]);
+  }));
 }
 
 // #2 수정: 교사 모달이 placeholder만 표시하던 버그 → teacher-photo 서명 URL <img> 렌더(저널 패턴 재사용).
