@@ -295,8 +295,8 @@ const STATUS_META = {
   idle: { step: 0, k: '인증 시작', cls: '' },
   uploading: { step: 0, k: '올리는 중', cls: 'up' },
   queued: { step: 0, k: '전송 보류(오프라인)', cls: 'queued' },
-  pending: { step: 2, k: '기록됨', cls: 'approved' },     // R2 협동: 제출 즉시 인정(승인 불요) → 완료 표현
-  approved: { step: 2, k: '기록됨', cls: 'approved' },
+  pending: { step: 1, k: '승인 대기', cls: 'pending' },   // R3 #2: 교사 승인 시 인정 → 제출 후 '승인 대기'
+  approved: { step: 2, k: '완료', cls: 'approved' },
   revise: { step: 2, k: '보완요청', cls: 'revise' },
 };
 function subStatusChip(sub) {
@@ -307,7 +307,7 @@ function subStatusChip(sub) {
 function stepper(status) {
   const cur = (STATUS_META[status] || STATUS_META.idle).step;
   const revise = status === 'revise';
-  const labels = ['올림', '보내는 중', revise ? '보완요청' : '기록됨'];
+  const labels = ['올림', '승인 대기', revise ? '보완요청' : '완료'];
   return el('div', { class: 'stepper' }, labels.map((lb, i) => el('div', {
     class: `step ${i < cur ? 'done' : ''} ${i === cur ? 'on' : ''} ${i === 2 && revise ? 'revise' : ''}`,
   }, [el('span', { class: 'sdot' }, i < cur ? '✓' : String(i + 1)), el('span', { class: 'slbl' }, lb)])));
@@ -354,16 +354,15 @@ function screenMission(missionId) {
     ];
   } else if (sub.status === 'pending') {
     bodyKids = [
-      el('div', { class: 'm-result approved' }, [
-        el('div', { class: 'r-ic' }, '✓'),
-        el('h2', { class: 'display' }, '다녀온 기록이 저장됐어요'),
-        el('p', {}, place ? '홈 징검다리에 이 장소의 돌이 차오르고 불이 켜졌어요. 캠프 점수에 더해졌어요!' : '코스 미션 기록이 캠프 점수에 더해졌어요!'),
+      el('div', { class: 'm-result pending' }, [
+        el('div', { class: 'r-ic spin' }, '◷'),
+        el('h2', { class: 'display' }, '교사 선생님 확인 중'),
+        el('p', {}, '제출이 접수됐어요. 승인되면 홈 징검다리에 불이 켜지고 캠프 점수에 반영돼요.'),
         thumbsRow(sub),
         sub.comment ? el('p', { class: 'r-comment' }, `“${sub.comment}”`) : null,
       ]),
       ...demoReviewControls(missionId),
       el('a', { href: backHref, class: 'btn ghost block' }, '장소로 돌아가기'),
-      el('a', { href: '#/board', class: 'btn block' }, '캠프 현황 보기'),
     ];
   } else if (sub.status === 'revise') {
     bodyKids = [

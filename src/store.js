@@ -32,6 +32,12 @@ function demoState() {
     B11: { checkedIn: true, status: 'approved' },
     C3: { checkedIn: true, status: 'pending' },
   };
+  // 데모 제출물(저널·상태머신 미리보기용). 저널=제출분(승인불요)이므로 pending도 게재.
+  const now = new Date().toISOString();
+  s.submissions = {
+    m_B11_1: { status: 'approved', scope: 'place', placeId: 'B11', photoRefs: ['local/m_B11_1/0'], comment: '머릿돌의 연도를 찾았어요', teacherNote: null, remoteId: null, createdAt: now },
+    m_C3_1: { status: 'pending', scope: 'place', placeId: 'C3', photoRefs: ['local/m_C3_1/0'], comment: '', teacherNote: null, remoteId: null, createdAt: now },
+  };
   return s;
 }
 
@@ -70,9 +76,9 @@ export const Store = {
   progress(id) { return state.progress[id] || { checkedIn: false, status: 'none' }; },
   isRequired(id) { return REQUIRED.includes(id); },
   // 협동 전환(R2): '다녀옴/완료' = 제출 즉시(pending) 또는 승인(approved). 교사 승인 불요.
-  visited(id) { const s = (state.progress[id] || {}).status; return s === 'approved' || s === 'pending'; },
+  visited(id) { return (state.progress[id] || {}).status === 'approved'; },   // R3 #2: 미션 인정=교사 승인('approved')만(R2 pending 포함 되돌림)
   // 진행 카운트(점수 아님 — 시각 표시용). 제출=다녀옴.
-  crossedCount() { return Object.values(state.progress).filter((p) => p.status === 'approved' || p.status === 'pending').length; },
+  crossedCount() { return Object.values(state.progress).filter((p) => p.status === 'approved').length; },
   nextPlace() {
     for (const { placeId } of this.course) {
       if (!this.visited(placeId)) return placeId;
@@ -209,11 +215,12 @@ export const Store = {
   // ── 조별 저널 (D6) — 승인=게재 원칙. 완료(approved)된 장소만 지면으로. 승인 사진은 조 업로드(비공개 버킷). ──
   // 각 페이지: { placeId, place, submission(승인 제출, 있으면 사진·코멘트), reading(읽을거리 질문) }
   journal() {
-    const SUBMITTED = ['pending', 'approved', 'revise'];        // 제출=게재(R2 협동: 승인 불요. queued/idle 제외)
+    const SUBMITTED = ['pending', 'approved', 'revise'];        // 저널=제출분 게재(★승인 불요 유지 — R3 #2 ④). queued/idle 제외.
     const pages = [];
     for (const { placeId } of this.course) {
-      if (!this.visited(placeId)) continue;                    // 제출(다녀옴)=게재, 미방문 미표시
+      // ★저널은 visited(승인)와 분리 — 제출만 있으면 게재(승인 불요).
       const sub = Object.values(state.submissions).find((s) => s.placeId === placeId && SUBMITTED.includes(s.status)) || null;
+      if (!sub) continue;
       pages.push({ scope: 'place', placeId, place: this.place(placeId), submission: sub, reading: this.readingFor(placeId) });
     }
     // 제출된 코스 미션(장소 비귀속)도 별지로
