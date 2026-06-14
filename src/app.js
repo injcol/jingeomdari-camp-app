@@ -15,9 +15,9 @@ let pendingAllMap = false;   // 렌더 후 전체지도 초기화 플래그
 let draft = null;           // 미션 인증 드래프트 { files[], previews[], comment, uploading, progress }
 let teacherTab = 'queue';   // 교사 관리자 탭 queue|board|consent
 let teacherData = { queue: null, board: null, consent: null, loading: false, error: null, loaded: false };
-let photoModal = null;      // 사진 상세 모달 { refs, group, label }
-let consentForm = { groupId: '', label: '', archive: false, exportOk: false }; // 동의 추가 폼
+let photoModal = null;      // 사진 상세 모달 { refs, group, label, submissionId, urls }
 const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placeholder(매니페스트 §6 worker2 지정). url 미확정 19곳 노출
+let consentForm = { groupId: '', label: '', archive: false, exportOk: false }; // 동의 추가 폼
 let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
 function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
 
@@ -837,14 +837,20 @@ function screenJournal() {
   }
 
   const exportBar = pages.length ? el('div', { class: 'jr-export' }, [
-    el('button', { class: 'btn ghost block', onclick: () => alert('저널 내보내기는 학부모 동의(내보내기) 확인 후 발급됩니다. 실제 발행은 교사·관리자 승인 단계입니다.') }, '저널 내보내기 (동의 확인 후)'),
-    el('p', { class: 'jr-export-note' }, '다녀온 사진 수록 · 학부모 동의분만 외부 공유 · 삭제요청 항목 제외'),
+    el('button', { class: 'btn block', onclick: () => exportJournal() }, '📄 저널 내보내기 (PDF·인쇄)'),
+    el('p', { class: 'jr-export-note' }, '인쇄 화면에서 “PDF로 저장”을 고르면 파일로 보관·공유할 수 있어요. 다녀온 장소·사진·기록이 담겨요.'),
   ]) : null;
 
   return el('main', { class: 'phone tex-paper col' }, [
     el('div', { class: 'scroll' }, [cover, body, exportBar]),
     tabbar('journal'),
   ]);
+}
+
+// #1 저널 내보내기 — 승인·동의 게이트 제거. 인쇄 친화 출력(브라우저 'PDF로 저장'). 사진은 로드된 서명 img 사용.
+function exportJournal() {
+  // 사진 로드 보장 후 인쇄. @media print가 탭바·버튼 등 크롬 숨기고 지면만 출력.
+  Promise.resolve(loadJournalPhotos()).catch(() => {}).then(() => setTimeout(() => { if (typeof window.print === 'function') window.print(); }, 350));
 }
 
 // ── 조별 전용 링크 자동 입장 (#/join/<조코드>) — 학생 타이핑 0 ──
@@ -953,40 +959,40 @@ function screenBoard() {
   }
 
   const d = campCache.data;
-  const myId = Store.group.groupId;
-  let body;
-  if (!d) body = el('div', { class: 't-skel' }, '캠프 현황을 불러오는 중…');
-  else {
-    const covered = d.places_covered || 0, all = d.places_total || 20;
-    const pct = all ? Math.round((covered / all) * 100) : 0;
-    const headline = el('div', { class: 'camp-head tex-stone organic' }, [
-      el('div', { class: 'ch-main' }, [el('span', { class: 'ch-pts' }, String(d.total_score || 0)), el('span', { class: 'ch-unit' }, '점')]),
-      el('div', { class: 'ch-cov' }, `${all}곳 중 ${covered}곳 개척`),
-      el('div', { class: 'ch-track' }, [el('div', { class: 'ch-fill', style: `width:${pct}%` })]),
-    ]);
-    // 장소별: 다녀간 조 배지(순서) / 미개척 강조 (#3). 미개척을 위로(먼저 가도록 유도).
-    const rows = (d.per_place || []).slice().sort((a, b) => (a.groups.length - b.groups.length) || (b.base_points - a.base_points));
-    const placeList = el('div', { class: 'camp-places' }, rows.map((pp) => {
-      const fresh = (pp.groups || []).length === 0;
-      return el('a', { href: `#/place/${pp.place_id}`, class: `camp-place ${fresh ? 'fresh' : ''}` }, [
-        el('div', { class: 'cp-top' }, [
-          el('span', { class: 'cp-name' }, pp.name),
-          fresh ? el('span', { class: 'cp-fresh' }, `✨ 미개척 +${pp.base_points}`) : el('span', { class: 'cp-pts' }, `🏅 ${pp.base_points}`),
-        ]),
-        fresh
-          ? el('div', { class: 'cp-empty' }, '아직 아무 조도 안 갔어요 — 먼저 가면 만점!')
-          : el('div', { class: 'cp-groups' }, (pp.groups || []).map((g) => el('span', {
-              class: `cp-gchip ${g.group_id === myId ? 'me' : ''}`, style: `--c:${g.color || 'var(--river-500)'}`,
-              title: `${g.group_name} · ${g.rank}번째 · +${g.points}`,
-            }, [el('i', { class: 'cp-gdot' }), `${g.group_name}`]))),
-      ]);
-    }));
-    body = el('div', {}, [headline, el('h2', { class: 'sec' }, '장소별 발자취 · 미개척 먼저'), placeList]);
-  }
+  const body = d ? campBoardBody(d, Store.group.groupId) : el('div', { class: 't-skel' }, '캠프 현황을 불러오는 중…');
   return el('main', { class: 'phone tex-paper col' }, [
     el('div', { class: 'scroll' }, [head, el('p', { class: 'board-note muted' }, '약 20초마다 자동 갱신 · 제출 즉시 반영(승인 불요)'), body]),
     tabbar('board'),
   ]);
+}
+
+// 협동 보드 본문(학생 #/board + 교사 옵저버 현황 탭 공용). myId=null이면 me 하이라이트 없음.
+function campBoardBody(d, myId) {
+  const covered = d.places_covered || 0, all = d.places_total || 20;
+  const pct = all ? Math.round((covered / all) * 100) : 0;
+  const headline = el('div', { class: 'camp-head tex-stone organic' }, [
+    el('div', { class: 'ch-main' }, [el('span', { class: 'ch-pts' }, String(d.total_score || 0)), el('span', { class: 'ch-unit' }, '점')]),
+    el('div', { class: 'ch-cov' }, `${all}곳 중 ${covered}곳 개척`),
+    el('div', { class: 'ch-track' }, [el('div', { class: 'ch-fill', style: `width:${pct}%` })]),
+  ]);
+  // 장소별: 다녀간 조 배지(순서) / 미개척 강조 (#3). 미개척을 위로.
+  const rows = (d.per_place || []).slice().sort((a, b) => (a.groups.length - b.groups.length) || (b.base_points - a.base_points));
+  const placeList = el('div', { class: 'camp-places' }, rows.map((pp) => {
+    const fresh = (pp.groups || []).length === 0;
+    return el('a', { href: `#/place/${pp.place_id}`, class: `camp-place ${fresh ? 'fresh' : ''}` }, [
+      el('div', { class: 'cp-top' }, [
+        el('span', { class: 'cp-name' }, pp.name),
+        fresh ? el('span', { class: 'cp-fresh' }, `✨ 미개척 +${pp.base_points}`) : el('span', { class: 'cp-pts' }, `🏅 ${pp.base_points}`),
+      ]),
+      fresh
+        ? el('div', { class: 'cp-empty' }, '아직 아무 조도 안 갔어요 — 먼저 가면 만점!')
+        : el('div', { class: 'cp-groups' }, (pp.groups || []).map((g) => el('span', {
+            class: `cp-gchip ${g.group_id === myId ? 'me' : ''}`, style: `--c:${g.color || 'var(--river-500)'}`,
+            title: `${g.group_name} · ${g.rank}번째 · +${g.points}`,
+          }, [el('i', { class: 'cp-gdot' }), `${g.group_name}`]))),
+    ]);
+  }));
+  return el('div', {}, [headline, el('h2', { class: 'sec' }, '장소별 발자취 · 미개척 먼저'), placeList]);
 }
 
 function stub(title, msg, tab) {

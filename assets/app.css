@@ -506,3 +506,16 @@
 /* 교사 모달 실사진 */
 .pm-ph.loaded{padding:0; overflow:hidden;}
 .pm-ph.loaded img{width:100%; height:100%; object-fit:cover; display:block;}
+
+/* ───────── R3 #1 저널 내보내기 — 인쇄(PDF 저장) 친화 ───────── */
+@media print {
+  /* 크롬 숨김 — 지면만 출력 */
+  .tabbar, .jr-export, .route-bar, .score-badge, .teacher-link, .quick, .next, .badge { display:none !important; }
+  .phone { box-shadow:none !important; border:none !important; min-height:auto !important; width:auto !important; }
+  .scroll { overflow:visible !important; height:auto !important; }
+  body, .tex-paper { background:#fff !important; }
+  .jr-page { break-inside:avoid; page-break-inside:avoid; margin-bottom:14px; }
+  .jp-photo img { max-width:100%; height:auto; }
+  /* 사진·색상 인쇄 충실도 */
+  * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
