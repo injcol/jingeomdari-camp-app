@@ -476,3 +476,33 @@
   background:var(--river-900); color:#f3ecdd; font-size:14px; padding:11px 17px; border-radius:12px;
   box-shadow:0 8px 22px -8px rgba(0,0,0,.5); opacity:0; transition:opacity .28s, transform .28s; max-width:84%; text-align:center;}
 .toast.show{opacity:1; transform:translate(-50%,0);}
+
+/* ───────── R2 협동 보드(#/board) + 미개척 강조 ───────── */
+.camp-head{display:flex; flex-direction:column; gap:7px; margin:6px 16px 4px; padding:15px 17px; color:#f3ecdd;
+  background:linear-gradient(135deg,var(--river-700),var(--river-900));}
+.ch-main{display:flex; align-items:baseline; gap:4px;}
+.ch-pts{font-size:34px; font-weight:800; line-height:1; font-family:var(--display,inherit);}
+.ch-unit{font-size:16px; opacity:.85;}
+.ch-cov{font-size:13.5px; color:rgba(243,236,221,.82);}
+.ch-track{height:8px; border-radius:99px; background:rgba(243,236,221,.22); overflow:hidden; margin-top:3px;}
+.ch-fill{height:100%; background:var(--moss-bright); border-radius:99px; transition:width .4s;}
+.camp-places{display:flex; flex-direction:column; gap:8px; padding:0 16px 8px;}
+.camp-place{display:block; text-decoration:none; color:var(--ink); border:1px solid var(--line);
+  border-radius:13px; background:rgba(36,30,23,.02); padding:11px 13px;}
+.camp-place.fresh{border-color:var(--moss-bright); background:rgba(138,162,74,.10);}
+.cp-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+.cp-name{font-weight:700; font-size:15px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cp-pts{flex:none; font-size:13px; color:var(--stone-d);}
+.cp-fresh{flex:none; font-size:12.5px; font-weight:700; color:var(--moss);}
+.cp-empty{font-size:13px; color:var(--moss); margin-top:5px;}
+.cp-groups{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px;}
+.cp-gchip{display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:600; color:var(--ink-soft);
+  background:rgba(36,30,23,.05); padding:3px 8px; border-radius:999px;}
+.cp-gchip.me{color:var(--river-900); background:rgba(31,111,116,.14); box-shadow:0 0 0 1px var(--river-500) inset;}
+.cp-gdot{width:8px; height:8px; border-radius:50%; background:var(--c,var(--river-500)); flex:none;}
+/* 미개척 강조 — 장소 힌트·플래너 칩 */
+.point-hint.fresh{background:linear-gradient(135deg,var(--moss),var(--moss-bright));}
+.pc-pts.fresh{color:var(--moss); font-weight:700;}
+/* 교사 모달 실사진 */
+.pm-ph.loaded{padding:0; overflow:hidden;}
+.pm-ph.loaded img{width:100%; height:100%; object-fit:cover; display:block;}

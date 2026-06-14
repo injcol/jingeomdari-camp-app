@@ -4,6 +4,7 @@
 // 플래너/인증/저널/관리자는 D3~D6.
 import { Store } from './store.js';
 import { Teacher } from './teacher.js';
+import * as Supabase from './supabase.js';   // 교사 사진 모달(#2)·저널 사진 서명 URL 로더. (기존 line~752 참조 누락 import 보강)
 import { el, kakaoRouteUrl, naverSearchUrl, MISSION_TYPE, THEME_LABEL, HUB } from './util.js';
 import { renderMap, renderAllMap } from './map.js';
 
@@ -20,44 +21,31 @@ const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placehol
 let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
 function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
 
-// ── 점수경쟁제(#4) — 서버 집계 캐시 + 폴링(20s+진입+본인승인후). 사진/제출/정답 노출 0(집계만). ──
-let scoreCache = { board: null, loadedAt: 0, loading: false };   // leaderboard 행[]
-let compCache = { map: null, loadedAt: 0 };                       // place_completion {placeId: 완료조수}
+// ── 협동 캠프 현황(#4/#3) — camp_progress 캐시 + 폴링(진입+20s+제출후). 사진/제출/정답 노출 0(집계만). ──
+let campCache = { data: null, loadedAt: 0, loading: false };      // camp_progress() 결과(total_score·per_place·uncovered)
 let boardTimer = null;                                            // #/board 폴링 인터벌
 const FRESH_MS = 8000;                                            // 중복 호출 억제 창
 
-async function loadBoard(force) {
-  if (Store.localMode()) { scoreCache.board = null; return false; }
-  if (scoreCache.loading) return false;
-  if (!force && scoreCache.board && Date.now() - scoreCache.loadedAt < FRESH_MS) return false;
-  scoreCache.loading = true;
-  try { const rows = await Store.fetchLeaderboard(); scoreCache.board = rows || []; scoreCache.loadedAt = Date.now(); return true; }
-  catch (e) { console.warn('[board] 로드 실패(무시):', e.message); return false; }
-  finally { scoreCache.loading = false; }
+async function loadCamp(force) {
+  if (Store.localMode()) { campCache.data = null; return false; }
+  if (campCache.loading) return false;
+  if (!force && campCache.data && Date.now() - campCache.loadedAt < FRESH_MS) return false;
+  campCache.loading = true;
+  try { const d = await Store.fetchCampProgress(); campCache.data = d || null; campCache.loadedAt = Date.now(); return !!d; }
+  catch (e) { console.warn('[camp] 로드 실패(무시):', e.message); return false; }
+  finally { campCache.loading = false; }
 }
-async function loadCompletion(force) {
-  if (Store.localMode()) { compCache.map = null; return false; }
-  if (!force && compCache.map && Date.now() - compCache.loadedAt < FRESH_MS) return false;
-  try {
-    const rows = await Store.fetchPlaceCompletion(); const map = {};
-    for (const r of rows || []) map[r.place_id] = r.completed_groups;
-    compCache.map = map; compCache.loadedAt = Date.now(); return true;
-  } catch (e) { console.warn('[completion] 로드 실패(무시):', e.message); return false; }
-}
-// 백그라운드 로드 후 캐시가 갱신됐을 때만 1회 재렌더(루프 방지 — fresh면 조기반환).
-function kickBoard() { if (Store.localMode()) return; loadBoard().then((u) => { if (u) render(); }); }
-function kickCompletion() { if (Store.localMode()) return; loadCompletion().then((u) => { if (u) render(); }); }
+// 백그라운드 로드 후 캐시 갱신 시에만 1회 재렌더(루프 방지 — fresh면 조기반환).
+function kickCamp() { if (Store.localMode()) return; loadCamp().then((u) => { if (u) render(); }); }
 
-function myBoardRow() {
-  if (!scoreCache.board || !Store.groupCode) return null;
-  return scoreCache.board.find((r) => r.group_id === Store.group.groupId) || null;
+// per-place 다녀간 조 목록(순서대로) — #3 표시·힌트 N 산출.
+function placeGroups(id) {
+  const pp = campCache.data && campCache.data.per_place;
+  if (!pp) return [];
+  const row = pp.find((x) => x.place_id === id);
+  return row ? (row.groups || []) : [];
 }
-function myRank() {
-  if (!scoreCache.board || !Store.groupCode) return null;
-  const i = scoreCache.board.findIndex((r) => r.group_id === Store.group.groupId);
-  return i < 0 ? null : i + 1;
-}
-function completionOf(id) { return (compCache.map && compCache.map[id]) || 0; }
+function coveredCount(id) { return placeGroups(id).length; }   // 그 장소를 다녀간 조 수(힌트 N)
 
 // 경량 토스트(자동 소멸) — 코스 저장 실패 등 비차단 알림.
 function toast(msg) {
@@ -97,8 +85,8 @@ function buildCrossing(course, nextId) {
   const wrap = el('div', { class: 'crossing', style: `height:${H}px` });
   wrap.appendChild(el('div', { class: 'river-layer', html: svg }));
   pts.forEach((p) => {
-    const place = Store.place(p.placeId); const pr = Store.progress(p.placeId);
-    const done = pr.status === 'approved'; const now = p.placeId === nextId;
+    const place = Store.place(p.placeId);
+    const done = Store.visited(p.placeId); const now = p.placeId === nextId;   // 제출=다녀옴(승인 불요)
     const fill = done ? 78 : (now ? 32 : 0);
     const stone = el('a', {
       href: `#/place/${p.placeId}`,
@@ -116,21 +104,21 @@ function buildCrossing(course, nextId) {
   return wrap;
 }
 
-// 홈 점수·순위 배지 — 돌물 진행 시각화와 별개로 추가(대체 아님). #/board로 연결.
+// 홈 협동 배지 — "우리 캠프 함께 N점 · M/20곳". 돌물 진행 시각화와 별개(대체 아님). #/board로 연결.
 function scoreBadge() {
   if (Store.localMode()) {
     return el('a', { href: '#/board', class: 'score-badge tex-stone organic local' }, [
       el('div', { class: 'sb-main' }, [el('span', { class: 'sb-pts' }, String(Store.localScore())), el('span', { class: 'sb-unit' }, '점')]),
-      el('div', { class: 'sb-side' }, [el('div', { class: 'sb-k' }, '우리 조 점수 (예상)'), el('div', { class: 'sb-rank' }, '전체 순위는 온라인에서 →')]),
+      el('div', { class: 'sb-side' }, [el('div', { class: 'sb-k' }, '우리 조가 더한 점수 (예상)'), el('div', { class: 'sb-rank' }, '캠프 전체 현황은 온라인에서 →')]),
     ]);
   }
-  const row = myBoardRow(), rank = myRank(), total = scoreCache.board ? scoreCache.board.length : 0;
-  const sc = row ? row.score : 0, done = row ? row.places_completed : 0;
+  const d = campCache.data;
+  const total = d ? d.total_score : 0, covered = d ? d.places_covered : 0, all = d ? d.places_total : 20;
   return el('a', { href: '#/board', class: 'score-badge tex-stone organic' }, [
-    el('div', { class: 'sb-main' }, [el('span', { class: 'sb-pts' }, String(sc)), el('span', { class: 'sb-unit' }, '점')]),
+    el('div', { class: 'sb-main' }, [el('span', { class: 'sb-pts' }, String(total)), el('span', { class: 'sb-unit' }, '점')]),
     el('div', { class: 'sb-side' }, [
-      el('div', { class: 'sb-k' }, '우리 조 점수'),
-      el('div', { class: 'sb-rank' }, rank ? (done > 0 ? `${total}조 중 ${rank}위 · ${done}곳 통과 →` : '아직 첫 징검다리 전 →') : '전체 현황 보기 →'),
+      el('div', { class: 'sb-k' }, '우리 캠프가 함께 모은 점수'),
+      el('div', { class: 'sb-rank' }, `${all}곳 중 ${covered}곳 개척 · 전체 현황 →`),
     ]),
   ]);
 }
@@ -139,7 +127,6 @@ function screenHome() {
   const course = Store.course;
   const nextId = Store.nextPlace();
   const next = nextId ? Store.place(nextId) : null;
-  const pendingCount = course.filter(({ placeId }) => Store.progress(placeId).status === 'pending').length;
 
   const nextCard = next ? el('a', { href: `#/place/${next.placeId}`, class: 'next tex-stone organic' }, [
     el('div', { class: 'next-ic tex-water organic' }, '→'),
@@ -165,13 +152,9 @@ function screenHome() {
     buildCrossing(course, nextId),
     nextCard,
   ];
-  if (pendingCount > 0) children.push(el('div', { class: 'badge organic' }, [
-    el('span', { class: 'n' }, String(pendingCount)),
-    el('span', {}, `승인 대기 ${pendingCount}건 — 교사 선생님 확인 중이에요`),
-  ]));
   children.push(el('nav', { class: 'quick' }, [
     el('a', { href: '#/planner', class: 'tex-stone organic q-dark' }, [el('span', { class: 'q-ic' }, '🗺'), el('span', { class: 'q-t' }, '코스 플래너'), el('span', { class: 'q-d' }, '공통 3곳 + 선택 담기')]),
-    el('a', { href: '#/journal', class: 'tex-paper organic q-light' }, [el('span', { class: 'q-ic' }, '📖'), el('span', { class: 'q-t' }, '조별 저널'), el('span', { class: 'q-d' }, '승인 사진 수록')]),
+    el('a', { href: '#/journal', class: 'tex-paper organic q-light' }, [el('span', { class: 'q-ic' }, '📖'), el('span', { class: 'q-t' }, '조별 저널'), el('span', { class: 'q-d' }, '다녀온 사진 수록')]),
   ]));
   // 코스 미션(장소 비귀속) — 별도 진입
   const cms = Store.courseMissions();
@@ -247,15 +230,18 @@ function screenPlace(id) {
     el('a', { class: 'btn rb-btn', href: kakao || '#', target: '_blank', rel: 'noopener' }, '카카오맵'),
   ]);
 
-  // 점수 힌트(§3-4): 기본점 + "현재 N개 조 완료 → 지금 가면 P/(N+1)점" (전략적 분산 유도). N=place_completion 폴링.
+  // 협동 힌트(R2): 미개척 강조. 우리가 가면 (N+1)번째 = P/2^N 기여(반감). N=다녀간 조 수(camp_progress 폴링).
   const pts = Store.basePointsOf(id);
-  const nDone = completionOf(id);
-  const gain = Math.round(pts / (nDone + 1));
-  const pointHint = el('div', { class: 'point-hint tex-water organic' }, [
+  const nDone = coveredCount(id);
+  const gainRaw = pts / Math.pow(2, nDone);
+  const gainStr = Number.isInteger(gainRaw) ? String(gainRaw) : gainRaw.toFixed(1);
+  const pointHint = el('div', { class: `point-hint tex-water organic ${nDone === 0 ? 'fresh' : ''}` }, [
     el('div', { class: 'ph-pts' }, [el('b', {}, String(pts)), el('small', {}, '기본점')]),
     el('div', { class: 'ph-body' }, [
-      el('div', { class: 'ph-k' }, nDone > 0 ? `지금 ${nDone}개 조 통과` : '아직 아무 조도 안 지났어요'),
-      el('div', { class: 'ph-gain' }, [`지금 가면 `, el('b', {}, `${gain}점`), nDone > 0 ? el('small', {}, ` (${pts}÷${nDone + 1})`) : el('small', {}, ' (단독)')]),
+      el('div', { class: 'ph-k' }, nDone === 0 ? '✨ 아직 아무 조도 안 간 곳!' : `${nDone}개 조가 다녀갔어요`),
+      el('div', { class: 'ph-gain' }, nDone === 0
+        ? [`지금 가면 캠프에 `, el('b', {}, `+${gainStr}점`), el('small', {}, ' (첫 개척, 만점!)')]
+        : [`지금 가면 `, el('b', {}, `+${gainStr}점`), el('small', {}, ` (${nDone + 1}번째 방문)`)]),
     ]),
   ]);
 
@@ -309,8 +295,8 @@ const STATUS_META = {
   idle: { step: 0, k: '인증 시작', cls: '' },
   uploading: { step: 0, k: '올리는 중', cls: 'up' },
   queued: { step: 0, k: '전송 보류(오프라인)', cls: 'queued' },
-  pending: { step: 1, k: '승인 대기', cls: 'pending' },
-  approved: { step: 2, k: '승인됨', cls: 'approved' },
+  pending: { step: 2, k: '기록됨', cls: 'approved' },     // R2 협동: 제출 즉시 인정(승인 불요) → 완료 표현
+  approved: { step: 2, k: '기록됨', cls: 'approved' },
   revise: { step: 2, k: '보완요청', cls: 'revise' },
 };
 function subStatusChip(sub) {
@@ -321,7 +307,7 @@ function subStatusChip(sub) {
 function stepper(status) {
   const cur = (STATUS_META[status] || STATUS_META.idle).step;
   const revise = status === 'revise';
-  const labels = ['올림', '승인 대기', revise ? '보완요청' : '승인됨'];
+  const labels = ['올림', '보내는 중', revise ? '보완요청' : '기록됨'];
   return el('div', { class: 'stepper' }, labels.map((lb, i) => el('div', {
     class: `step ${i < cur ? 'done' : ''} ${i === cur ? 'on' : ''} ${i === 2 && revise ? 'revise' : ''}`,
   }, [el('span', { class: 'sdot' }, i < cur ? '✓' : String(i + 1)), el('span', { class: 'slbl' }, lb)])));
@@ -368,15 +354,16 @@ function screenMission(missionId) {
     ];
   } else if (sub.status === 'pending') {
     bodyKids = [
-      el('div', { class: 'm-result pending' }, [
-        el('div', { class: 'r-ic spin' }, '◷'),
-        el('h2', { class: 'display' }, '교사 선생님 확인 중'),
-        el('p', {}, '제출이 접수됐어요. 승인되면 홈 징검다리에 불이 켜져요. 점수는 없어요.'),
+      el('div', { class: 'm-result approved' }, [
+        el('div', { class: 'r-ic' }, '✓'),
+        el('h2', { class: 'display' }, '다녀온 기록이 저장됐어요'),
+        el('p', {}, place ? '홈 징검다리에 이 장소의 돌이 차오르고 불이 켜졌어요. 캠프 점수에 더해졌어요!' : '코스 미션 기록이 캠프 점수에 더해졌어요!'),
         thumbsRow(sub),
         sub.comment ? el('p', { class: 'r-comment' }, `“${sub.comment}”`) : null,
       ]),
       ...demoReviewControls(missionId),
       el('a', { href: backHref, class: 'btn ghost block' }, '장소로 돌아가기'),
+      el('a', { href: '#/board', class: 'btn block' }, '캠프 현황 보기'),
     ];
   } else if (sub.status === 'revise') {
     bodyKids = [
@@ -574,7 +561,7 @@ function teacherQueue() {
         el('span', { class: 'tc-time' }, fmtAgo(s.created_at)),
       ]),
       el('div', { class: 'tc-mission' }, Teacher.missionLabel(s.mission_id)),
-      el('button', { class: 'tc-thumbs', onclick: () => { photoModal = { refs: s.photo_refs || [], group: s.group_name, label: where }; render(); } },
+      el('button', { class: 'tc-thumbs', onclick: () => { photoModal = { refs: s.photo_refs || [], group: s.group_name, label: where, submissionId: s.submission_id, urls: null, loading: false, error: null }; render(); } },
         [el('span', { class: 'tt-ic' }, '🖼'), `사진 ${n}장 보기`]),
       s.comment ? el('div', { class: 'tc-comment' }, `“${s.comment}”`) : null,
       // R2 Critical#1: 승인=대형 단독 1차 액션(48px+), 보완·숨김은 물리적으로 분리된 하단 행
@@ -651,18 +638,43 @@ function consentToggle(label, on, onClick) {
   return el('button', { class: `cs-tg ${on ? 'on' : ''}`, onclick: onClick }, [el('span', { class: 'cs-box' }, on ? '✓' : ''), label]);
 }
 
+// #2 수정: 교사 모달이 placeholder만 표시하던 버그 → teacher-photo 서명 URL <img> 렌더(저널 패턴 재사용).
+async function loadModalPhotos() {
+  const m = photoModal; if (!m || !m.submissionId) return;
+  m.loading = true;
+  try {
+    const data = await Supabase.teacherPhotoUrls(Teacher.code, m.submissionId);   // { urls:[{ref,signedUrl,...}] }
+    if (photoModal === m) { m.urls = ((data && data.urls) || []).filter((u) => u.signedUrl); m.loading = false; render(); }
+  } catch (e) {
+    if (photoModal === m) { m.error = String(e.message || e); m.loading = false; render(); }
+  }
+}
 function photoModalEl() {
   const m = photoModal;
   const n = m.refs.length;
+  // production: 최초 렌더 시 서명 URL 1회 로드(teacher-photo). 로컬 데모는 placeholder.
+  if (!Teacher.localMode() && m.submissionId && m.urls == null && !m.loading && !m.error && n > 0) loadModalPhotos();
+  let photosEl;
+  if (Teacher.localMode()) {
+    photosEl = n ? m.refs.map((_p, i) => el('div', { class: 'pm-ph' }, [el('span', { class: 'pm-ph-ic' }, '🖼'), el('small', {}, `사진 ${i + 1}`)])) : [el('div', { class: 'pm-empty' }, '첨부 사진 없음')];
+  } else if (n === 0) {
+    photosEl = [el('div', { class: 'pm-empty' }, '첨부 사진 없음')];
+  } else if (m.error) {
+    photosEl = [el('div', { class: 'pm-empty' }, '사진을 불러오지 못했어요.'), el('button', { class: 'mini', onclick: () => { m.error = null; m.urls = null; render(); } }, '다시 시도')];
+  } else if (m.urls == null) {
+    photosEl = [el('div', { class: 'pm-empty' }, '사진 불러오는 중…')];
+  } else if (m.urls.length === 0) {
+    photosEl = [el('div', { class: 'pm-empty' }, '첨부 사진 없음')];
+  } else {
+    photosEl = m.urls.map((u) => el('div', { class: 'pm-ph loaded' }, [el('img', { src: u.signedUrl, alt: '제출 사진', loading: 'lazy' })]));
+  }
   return el('div', { class: 'pm-scrim', onclick: (e) => { if (e.target.classList.contains('pm-scrim')) { photoModal = null; render(); } } }, [
     el('div', { class: 'pm-box' }, [
       el('div', { class: 'pm-head' }, [el('b', {}, `${m.group} · ${m.label}`), el('button', { class: 'pm-x', onclick: () => { photoModal = null; render(); } }, '×')]),
-      el('div', { class: 'pm-photos' }, n
-        ? m.refs.map((p, i) => el('div', { class: 'pm-ph' }, [el('span', { class: 'pm-ph-ic' }, '🖼'), el('small', {}, `사진 ${i + 1}`)]))
-        : [el('div', { class: 'pm-empty' }, '첨부 사진 없음')]),
+      el('div', { class: 'pm-photos' }, photosEl),
       el('div', { class: 'pm-note' }, Teacher.localMode()
-        ? '※ 로컬 데모 — 실제 원본은 비공개 버킷의 만료형 서명 URL로 표시(키 세션 후 production).'
-        : '비공개 버킷 · 만료형 서명 URL로 표시됩니다.'),
+        ? '※ 로컬 데모 — 실제 원본은 비공개 버킷의 만료형 서명 URL로 표시(production).'
+        : '비공개 버킷 · 만료형 서명 URL(약 5분). 외부 저장 자제.'),
     ]),
   ]);
 }
@@ -702,11 +714,12 @@ function screenPlanner() {
     el('button', { class: `chip ${plannerTheme === k ? 'on' : ''}`, onclick: () => { plannerTheme = k; render(); } }, label)));
   const poolGrid = el('div', { class: 'pool' }, pool.map((p) => {
     const added = Store.inCourse(p.placeId);
-    const ppts = Store.basePointsOf(p.placeId), pn = completionOf(p.placeId);
+    const ppts = Store.basePointsOf(p.placeId), pn = coveredCount(p.placeId);
+    const pgain = ppts / Math.pow(2, pn), pgainStr = Number.isInteger(pgain) ? String(pgain) : pgain.toFixed(1);
     return el('div', { class: `pcard tex-paper organic ${added ? 'added' : ''}` }, [
       el('div', { class: 'pc-name display' }, p.name),
       el('div', { class: 'pc-sub' }, `${ROUTE_ICON[p.planner.routeType] || ''} · 허브 ${p.planner.hubMinutes ?? '-'}분${p.indoorCooled ? ' · 냉방' : ''}`),
-      el('div', { class: 'pc-pts' }, `🏅 ${ppts}점${pn > 0 ? ` · ${pn}개 조 통과 → 지금 ${Math.round(ppts / (pn + 1))}점` : ' · 단독 시 만점'}`),
+      el('div', { class: `pc-pts ${pn === 0 ? 'fresh' : ''}` }, pn === 0 ? `✨ 미개척 · 지금 가면 +${pgainStr}점(만점)` : `🏅 ${pn}개 조 다녀감 · 지금 +${pgainStr}점`),
       el('div', { class: 'pc-tags' }, p.themeTags.map((tg) => el('span', { class: 'chip' }, THEME_LABEL[tg] || tg))),
       added
         ? el('button', { class: 'btn ghost block', onclick: () => { Store.removePlace(p.placeId); render(); } }, '담음 ✓ (빼기)')
@@ -793,7 +806,7 @@ function screenJournal() {
   if (!pages.length) {
     body = el('div', { class: 'jr-empty' }, [
       el('div', { class: 'jr-empty-art tex-paper' }, [el('span', {}, '◌')]),
-      el('p', { class: 'display' }, '첫 미션이 승인되면'),
+      el('p', { class: 'display' }, '첫 미션을 인증하면'),
       el('p', { class: 'muted' }, '여기 저널의 첫 장이 채워져요. 장소에 도착해 미션을 인증해 보세요.'),
       el('a', { href: '#/', class: 'btn' }, '홈 징검다리로'),
     ]);
@@ -825,7 +838,7 @@ function screenJournal() {
 
   const exportBar = pages.length ? el('div', { class: 'jr-export' }, [
     el('button', { class: 'btn ghost block', onclick: () => alert('저널 내보내기는 학부모 동의(내보내기) 확인 후 발급됩니다. 실제 발행은 교사·관리자 승인 단계입니다.') }, '저널 내보내기 (동의 확인 후)'),
-    el('p', { class: 'jr-export-note' }, '승인된 사진만 게재 · 학부모 동의분만 외부 공유 · 삭제요청 항목 제외'),
+    el('p', { class: 'jr-export-note' }, '다녀온 사진 수록 · 학부모 동의분만 외부 공유 · 삭제요청 항목 제외'),
   ]) : null;
 
   return el('main', { class: 'phone tex-paper col' }, [
@@ -920,44 +933,58 @@ function screenAllMap() {
   ]);
 }
 
-// ── 전체 현황(#/board) — 전 조 실시간 순위·점수·완료 장소 수(집계만). 청소년부 정서: 깔끔·격려 톤. ──
+// ── 전체 현황(#/board) — 협동 보드(#3+#4). 캠프 합계 + 장소별 다녀간 조 + 미개척. 경쟁/순위 없음. ──
 function screenBoard() {
   const head = el('div', { class: 'pl-head' }, [
-    el('h1', { class: 'display' }, '전체 현황'),
-    el('p', { class: 'muted' }, '조별 점수와 완료한 장소 수예요. 멀리 간 장소일수록 점수가 높고, 같은 곳에 여러 조가 가면 나눠 가져요.'),
+    el('h1', { class: 'display' }, '우리 캠프 현황'),
+    el('p', { class: 'muted' }, '모든 조의 발자취가 모여 캠프 점수가 돼요. 아직 아무도 안 간 곳을 먼저 찾으면 만점! 함께 20곳을 개척해요.'),
   ]);
 
   if (Store.localMode()) {
     return el('main', { class: 'phone tex-paper col' }, [
       el('div', { class: 'scroll' }, [head,
         el('div', { class: 'board-local tex-stone organic' }, [
-          el('div', { class: 'bl-pts' }, [el('b', {}, String(Store.localScore())), ' 점 (예상)']),
-          el('p', { class: 'muted' }, '지금은 둘러보기(로컬) 모드예요. 선생님께 받은 우리 조 링크로 입장하면 전체 조 실시간 순위가 표시됩니다.'),
+          el('div', { class: 'bl-pts' }, [el('b', {}, String(Store.localScore())), ' 점 (우리 조 예상 기여)']),
+          el('p', { class: 'muted' }, '지금은 둘러보기(로컬) 모드예요. 선생님께 받은 우리 조 링크로 입장하면 캠프 전체 협동 현황이 표시됩니다.'),
         ]),
       ]),
       tabbar('board'),
     ]);
   }
 
-  const board = scoreCache.board;
+  const d = campCache.data;
+  const myId = Store.group.groupId;
   let body;
-  if (!board) body = el('div', { class: 't-skel' }, '순위를 불러오는 중…');
-  else if (!board.length) body = el('div', { class: 't-empty' }, [el('div', { class: 'te-ic' }, '⛰'), el('p', {}, '아직 첫 징검다리를 건넌 조가 없어요. 우리 조가 먼저 인증해 볼까요?')]);
+  if (!d) body = el('div', { class: 't-skel' }, '캠프 현황을 불러오는 중…');
   else {
-    const myId = Store.group.groupId;
-    body = el('div', { class: 'board-list' }, board.map((r, i) => {
-      const me = r.group_id === myId;
-      return el('div', { class: `board-row ${me ? 'me' : ''}` }, [
-        el('span', { class: `br-rank r${i + 1}` }, String(i + 1)),
-        el('span', { class: 'br-dot', style: `background:${r.color || 'var(--river-500)'}` }),
-        el('span', { class: 'br-name' }, [el('span', { class: 'br-nm' }, r.group_name), me ? el('span', { class: 'br-you' }, '우리 조') : null]),
-        el('span', { class: 'br-done' }, `${r.places_completed}곳 통과`),
-        el('span', { class: 'br-score' }, [el('b', {}, String(r.score)), '점']),
+    const covered = d.places_covered || 0, all = d.places_total || 20;
+    const pct = all ? Math.round((covered / all) * 100) : 0;
+    const headline = el('div', { class: 'camp-head tex-stone organic' }, [
+      el('div', { class: 'ch-main' }, [el('span', { class: 'ch-pts' }, String(d.total_score || 0)), el('span', { class: 'ch-unit' }, '점')]),
+      el('div', { class: 'ch-cov' }, `${all}곳 중 ${covered}곳 개척`),
+      el('div', { class: 'ch-track' }, [el('div', { class: 'ch-fill', style: `width:${pct}%` })]),
+    ]);
+    // 장소별: 다녀간 조 배지(순서) / 미개척 강조 (#3). 미개척을 위로(먼저 가도록 유도).
+    const rows = (d.per_place || []).slice().sort((a, b) => (a.groups.length - b.groups.length) || (b.base_points - a.base_points));
+    const placeList = el('div', { class: 'camp-places' }, rows.map((pp) => {
+      const fresh = (pp.groups || []).length === 0;
+      return el('a', { href: `#/place/${pp.place_id}`, class: `camp-place ${fresh ? 'fresh' : ''}` }, [
+        el('div', { class: 'cp-top' }, [
+          el('span', { class: 'cp-name' }, pp.name),
+          fresh ? el('span', { class: 'cp-fresh' }, `✨ 미개척 +${pp.base_points}`) : el('span', { class: 'cp-pts' }, `🏅 ${pp.base_points}`),
+        ]),
+        fresh
+          ? el('div', { class: 'cp-empty' }, '아직 아무 조도 안 갔어요 — 먼저 가면 만점!')
+          : el('div', { class: 'cp-groups' }, (pp.groups || []).map((g) => el('span', {
+              class: `cp-gchip ${g.group_id === myId ? 'me' : ''}`, style: `--c:${g.color || 'var(--river-500)'}`,
+              title: `${g.group_name} · ${g.rank}번째 · +${g.points}`,
+            }, [el('i', { class: 'cp-gdot' }), `${g.group_name}`]))),
       ]);
     }));
+    body = el('div', {}, [headline, el('h2', { class: 'sec' }, '장소별 발자취 · 미개척 먼저'), placeList]);
   }
   return el('main', { class: 'phone tex-paper col' }, [
-    el('div', { class: 'scroll' }, [head, el('p', { class: 'board-note muted' }, '약 20초마다 자동 갱신 · 점수 동률은 완료 장소 수 순'), body]),
+    el('div', { class: 'scroll' }, [head, el('p', { class: 'board-note muted' }, '약 20초마다 자동 갱신 · 제출 즉시 반영(승인 불요)'), body]),
     tabbar('board'),
   ]);
 }
@@ -979,19 +1006,19 @@ function render() {
   if (!mMission && draft) { draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = null; }  // 미션 이탈 시 드래프트 정리
   if (mJoin) root.appendChild(screenJoin(mJoin[1]));
   else if (mMission) root.appendChild(screenMission(mMission[1]));
-  else if (mPlace) { root.appendChild(screenPlace(mPlace[1])); kickCompletion(); }
+  else if (mPlace) { root.appendChild(screenPlace(mPlace[1])); kickCamp(); }
   else if (h.startsWith('#/teacher')) root.appendChild(screenTeacher());
   else if (h.startsWith('#/map')) root.appendChild(screenAllMap());
-  else if (h.startsWith('#/planner')) { root.appendChild(screenPlanner()); kickCompletion(); }
+  else if (h.startsWith('#/planner')) { root.appendChild(screenPlanner()); kickCamp(); }
   else if (h.startsWith('#/board')) root.appendChild(screenBoard());
   else if (h.startsWith('#/journal')) { root.appendChild(screenJournal()); requestAnimationFrame(() => loadJournalPhotos()); }
-  else { root.appendChild(screenHome()); kickBoard(); }
+  else { root.appendChild(screenHome()); kickCamp(); }
   window.scrollTo(0, 0);
   // #/board 실시간 폴링(20s) — 진입 시 즉시 로드 + 인터벌, 이탈 시 정리.
   if (h.startsWith('#/board')) {
-    kickBoard();
+    kickCamp();
     if (!Store.localMode() && !boardTimer) boardTimer = setInterval(() => {
-      loadBoard(true).then((u) => { if (u && location.hash.startsWith('#/board')) render(); });
+      loadCamp(true).then((u) => { if (u && location.hash.startsWith('#/board')) render(); });
     }, 20000);
   } else if (boardTimer) { clearInterval(boardTimer); boardTimer = null; }
   if (pendingMap) {
@@ -1009,7 +1036,7 @@ function render() {
       const items = Store.seed.places.map((p) => ({
         id: p.placeId, name: p.name, lat: p.naverMap.lat, lng: p.naverMap.lng,
         theme: p.themeTags.map((t) => THEME_LABEL[t] || t).join(' · '),
-        inCourse: courseIds.has(p.placeId), done: Store.progress(p.placeId).status === 'approved',
+        inCourse: courseIds.has(p.placeId), done: Store.visited(p.placeId),
       }));
       renderAllMap(c, fb, items, HUB, Store.group.color).catch((e) => console.warn('[allmap] fallback:', e.message));
     });
@@ -1018,9 +1045,9 @@ function render() {
 
 window.addEventListener('hashchange', render);
 // 재연결 시 승인/보완 상태 동기화(production). 로컬모드는 no-op.
-window.addEventListener('online', () => { Store.refreshStatus().then(() => loadBoard(true)).then(render).catch(() => {}); });
+window.addEventListener('online', () => { Store.refreshStatus().then(() => loadCamp(true)).then(render).catch(() => {}); });
 render();
-// 초기 동기화: 이미 입장한 production 상태면 서버에서 코스·진행 갱신(새로고침 유지) + 점수 갱신.
+// 초기 동기화: 이미 입장한 production 상태면 서버에서 코스·진행 갱신(새로고침 유지) + 캠프 현황 갱신.
 if (!Store.localMode() && !location.hash.startsWith('#/join')) {
-  Store.loadRemoteCourse().then(() => Store.refreshStatus()).then(() => loadBoard(true)).then(render).catch(() => {});
+  Store.loadRemoteCourse().then(() => Store.refreshStatus()).then(() => loadCamp(true)).then(render).catch(() => {});
 }

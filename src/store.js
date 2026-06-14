@@ -69,12 +69,13 @@ export const Store = {
   readingFor(id) { return (seed.readings || []).find((r) => (r.servedPlaceIds || []).includes(id)) || null; },
   progress(id) { return state.progress[id] || { checkedIn: false, status: 'none' }; },
   isRequired(id) { return REQUIRED.includes(id); },
-  // 진행 카운트(점수 아님 — 시각 표시용)
-  crossedCount() { return Object.values(state.progress).filter((p) => p.status === 'approved').length; },
+  // 협동 전환(R2): '다녀옴/완료' = 제출 즉시(pending) 또는 승인(approved). 교사 승인 불요.
+  visited(id) { const s = (state.progress[id] || {}).status; return s === 'approved' || s === 'pending'; },
+  // 진행 카운트(점수 아님 — 시각 표시용). 제출=다녀옴.
+  crossedCount() { return Object.values(state.progress).filter((p) => p.status === 'approved' || p.status === 'pending').length; },
   nextPlace() {
     for (const { placeId } of this.course) {
-      const pr = state.progress[placeId];
-      if (!pr || pr.status !== 'approved') return placeId;
+      if (!this.visited(placeId)) return placeId;
     }
     return null;
   },
@@ -208,16 +209,16 @@ export const Store = {
   // ── 조별 저널 (D6) — 승인=게재 원칙. 완료(approved)된 장소만 지면으로. 승인 사진은 조 업로드(비공개 버킷). ──
   // 각 페이지: { placeId, place, submission(승인 제출, 있으면 사진·코멘트), reading(읽을거리 질문) }
   journal() {
+    const SUBMITTED = ['pending', 'approved', 'revise'];        // 제출=게재(R2 협동: 승인 불요. queued/idle 제외)
     const pages = [];
     for (const { placeId } of this.course) {
-      const pr = state.progress[placeId];
-      if (!pr || pr.status !== 'approved') continue;           // 승인=게재, 대기/미진행 미표시
-      const sub = Object.values(state.submissions).find((s) => s.placeId === placeId && s.status === 'approved') || null;
+      if (!this.visited(placeId)) continue;                    // 제출(다녀옴)=게재, 미방문 미표시
+      const sub = Object.values(state.submissions).find((s) => s.placeId === placeId && SUBMITTED.includes(s.status)) || null;
       pages.push({ scope: 'place', placeId, place: this.place(placeId), submission: sub, reading: this.readingFor(placeId) });
     }
-    // 승인된 코스 미션(장소 비귀속)도 별지로
+    // 제출된 코스 미션(장소 비귀속)도 별지로
     for (const [mid, s] of Object.entries(state.submissions)) {
-      if (s.scope === 'course' && s.status === 'approved') {
+      if (s.scope === 'course' && SUBMITTED.includes(s.status)) {
         const cm = (seed.courseMissions || []).find((x) => x.missionId === mid);
         pages.push({ scope: 'course', missionId: mid, brief: cm ? cm.brief : '코스 미션', submission: s });
       }
@@ -242,17 +243,16 @@ export const Store = {
     const hm = (p.planner && p.planner.hubMinutes) || 0;
     return Math.max(10, Math.round(hm / 5) * 5);
   },
-  // 로컬/데모 미리보기 점수(서버 미연동 시): 승인된 장소 base_points 합(분배 미반영=낙관 상한). 순위는 온라인 전용.
+  // 로컬/데모 미리보기 점수(서버 미연동 시): 우리 조가 다녀온 장소 base_points 합(첫방문=만점 가정). 협동 합계는 온라인 전용.
   localScore() {
     let sc = 0;
     for (const { placeId } of this.course) {
-      if (this.progress(placeId).status === 'approved') sc += this.basePointsOf(placeId);
+      if (this.visited(placeId)) sc += this.basePointsOf(placeId);
     }
     return Math.round(sc);
   },
-  // 서버 집계 조회(읽기·집계만 — 사진/제출/정답 노출 0). localMode면 null.
-  async fetchLeaderboard() { if (isLocalMode()) return null; return Supabase.rpc('leaderboard', {}); },
-  async fetchPlaceCompletion() { if (isLocalMode()) return null; return Supabase.rpc('place_completion', {}); },
+  // 협동 캠프 현황 조회(집계만 — 사진/제출/정답 노출 0). #3+#4 동시 충족. localMode면 null.
+  async fetchCampProgress() { if (isLocalMode()) return null; return Supabase.rpc('camp_progress', {}); },
 
   // ── 코스 플래너 (D3) — group_course_place 동형. 공통필수 3곳 자동포함·삭제불가·정렬만 ──
   get requiredIds() { return [...REQUIRED]; },
