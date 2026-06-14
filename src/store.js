@@ -258,8 +258,9 @@ export const Store = {
     }
     return Math.round(sc);
   },
-  // 협동 캠프 현황 조회(집계만 — 사진/제출/정답 노출 0). #3+#4 동시 충족. localMode면 null.
-  async fetchCampProgress() { if (isLocalMode()) return null; return Supabase.rpc('camp_progress', {}); },
+  // 협동 캠프 현황 조회(집계만 — 사진/제출/정답 노출 0). #3+#4 동시 충족.
+  //   ★R4 #2: camp_progress는 public(조 불요) → isDemoEnv(네트워크)만 차단. 교사(조코드 없음)도 받음.
+  async fetchCampProgress() { if (isDemoEnv()) return null; return Supabase.rpc('camp_progress', {}); },
 
   // ── 코스 플래너 (D3) — group_course_place 동형. 공통필수 3곳 자동포함·삭제불가·정렬만 ──
   get requiredIds() { return [...REQUIRED]; },

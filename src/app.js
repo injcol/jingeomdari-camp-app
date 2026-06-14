@@ -26,7 +26,8 @@ let boardTimer = null;                                            // #/board 폴
 const FRESH_MS = 8000;                                            // 중복 호출 억제 창
 
 async function loadCamp(force) {
-  if (Store.localMode()) { campCache.data = null; return false; }
+  // ★R4 #2: camp_progress는 public(조 불요) → 게이트는 네트워크(isDemoEnv)만. 교사(조코드 없음)도 로드돼야 함.
+  if (Store.isDemoEnv()) { campCache.data = null; return false; }
   if (campCache.loading) return false;
   if (!force && campCache.data && Date.now() - campCache.loadedAt < FRESH_MS) return false;
   campCache.loading = true;
@@ -35,7 +36,7 @@ async function loadCamp(force) {
   finally { campCache.loading = false; }
 }
 // 백그라운드 로드 후 캐시 갱신 시에만 1회 재렌더(루프 방지 — fresh면 조기반환).
-function kickCamp() { if (Store.localMode()) return; loadCamp().then((u) => { if (u) render(); }); }
+function kickCamp() { if (Store.isDemoEnv()) return; loadCamp().then((u) => { if (u) render(); }); }
 
 // per-place 다녀간 조 목록(순서대로) — #3 표시·힌트 N 산출.
 function placeGroups(id) {
