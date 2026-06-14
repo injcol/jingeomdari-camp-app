@@ -13,11 +13,10 @@ let plannerTheme = 'all';   // 코스 플래너 테마 필터(로컬 UI 상태)
 let pendingMap = null;      // 렌더 후 초기화할 네이버 지도 {lat,lng,name}
 let pendingAllMap = false;   // 렌더 후 전체지도 초기화 플래그
 let draft = null;           // 미션 인증 드래프트 { files[], previews[], comment, uploading, progress }
-let teacherTab = 'queue';   // 교사 관리자 탭 queue|board|consent
-let teacherData = { queue: null, board: null, consent: null, loading: false, error: null, loaded: false };
+let teacherTab = 'queue';   // 교사 관리자 탭 queue|board (R4 ①: 동의 관리 탭 제거)
+let teacherData = { queue: null, board: null, loading: false, error: null, loaded: false };
 let photoModal = null;      // 사진 상세 모달 { refs, group, label, submissionId, urls }
 const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placeholder(매니페스트 §6 worker2 지정). url 미확정 19곳 노출
-let consentForm = { groupId: '', label: '', archive: false, exportOk: false }; // 동의 추가 폼
 let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
 function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
 
@@ -472,12 +471,12 @@ function demoReviewControls(missionId) {
   ])];
 }
 
-// ── 화면 ⑥ 교사 관리자 — 코드 게이트 · 승인 큐 · 조별 현황 보드 · 동의 관리 ──
+// ── 화면 ⑥ 교사 관리자 — 코드 게이트 · 승인 큐 · 조별 현황 (R4 ①: 동의 관리 제거) ──
 async function loadTeacher() {
   teacherData.loading = true; teacherData.error = null; render();
   try {
-    const [queue, board, consent] = await Promise.all([Teacher.queue(), Teacher.board(), Teacher.consentList()]);
-    teacherData = { queue, board, consent, loading: false, error: null, loaded: true };
+    const queue = await Teacher.queue();      // 전체 현황은 camp_progress(campCache)로 — teacher_board 미사용
+    teacherData = { queue, loading: false, error: null, loaded: true };
   } catch (e) {
     teacherData = { ...teacherData, loading: false, error: String(e.message || e), loaded: true };
     if (/invalid_teacher_code/.test(teacherData.error)) Teacher.clear();  // 코드 오류 → 게이트로
@@ -489,10 +488,10 @@ async function teacherAct(fn) { try { await fn(); } catch (e) { teacherData.erro
 function screenTeacher() {
   if (!Teacher.code) return teacherGate();
   if (!teacherData.loaded && !teacherData.loading) { loadTeacher(); }  // 최초 진입 시 로드
-  teacherTab = (location.hash.match(/^#\/teacher\/(\w+)/) || [])[1] || 'queue';  // 해시 연동 탭(딥링크)
+  teacherTab = ((location.hash.match(/^#\/teacher\/(\w+)/) || [])[1] === 'board') ? 'board' : 'queue';  // queue|board만
 
   const tabs = el('div', { class: 't-tabs' }, [
-    ['queue', '승인 큐'], ['board', '조별 현황'], ['consent', '동의 관리'],
+    ['queue', '승인 큐'], ['board', '전체 현황'],
   ].map(([k, label]) => {
     const n = k === 'queue' && teacherData.queue ? teacherData.queue.length : null;
     return el('button', { class: `t-tab ${teacherTab === k ? 'on' : ''}`, onclick: () => { location.hash = k === 'queue' ? '#/teacher' : `#/teacher/${k}`; } },
@@ -500,10 +499,9 @@ function screenTeacher() {
   }));
 
   let content;
-  if (teacherData.loading && !teacherData.queue) content = el('div', { class: 't-skel' }, '불러오는 중…');
-  else if (teacherTab === 'queue') content = teacherQueue();
-  else if (teacherTab === 'board') content = teacherBoard();
-  else content = teacherConsent();
+  if (teacherTab === 'board') content = teacherCampTab();
+  else if (teacherData.loading && !teacherData.queue) content = el('div', { class: 't-skel' }, '불러오는 중…');
+  else content = teacherQueue();
 
   const errBar = teacherData.error && !/invalid_teacher_code/.test(teacherData.error)
     ? el('div', { class: 't-err' }, [`오류: ${teacherData.error}`, el('button', { class: 'mini', onclick: () => loadTeacher() }, '다시')])
@@ -512,7 +510,7 @@ function screenTeacher() {
   return el('main', { class: 'phone tex-paper col' }, [
     el('header', { class: 't-head' }, [
       el('div', {}, [el('div', { class: 't-k' }, '교사 관리자'), el('h1', { class: 'display' }, '인증 검토 · 현황')]),
-      el('button', { class: 'mini', onclick: () => { Teacher.clear(); teacherData = { queue: null, board: null, consent: null, loading: false, error: null, loaded: false }; render(); } }, '나가기'),
+      el('button', { class: 'mini', onclick: () => { Teacher.clear(); teacherData = { queue: null, board: null, loading: false, error: null, loaded: false }; render(); } }, '나가기'),
     ]),
     tabs, errBar,
     el('div', { class: 'scroll t-body' }, [content]),
@@ -576,65 +574,13 @@ function teacherQueue() {
   }));
 }
 
-function teacherBoard() {
-  const b = teacherData.board || [];
-  return el('div', { class: 't-board' }, b.map((g) => {
-    const total = g.total_places || 0, done = g.approved_count || 0;
-    const pct = total ? Math.round((done / total) * 100) : 0;
-    const stale = (g.pending_count || 0) > 0 && (!g.last_activity || (Date.now() - new Date(g.last_activity).getTime()) > 45 * 60000);
-    return el('div', { class: `tb-row ${stale ? 'stale' : ''}` }, [
-      el('div', { class: 'tb-head' }, [
-        el('span', { class: 'tb-dot', style: `background:${g.color || 'var(--river-500)'}` }),
-        el('b', {}, g.group_name),
-        el('span', { class: 'tb-meta' }, `건넌 돌 ${done}/${total} · 체크인 ${g.checked_in_count || 0}`),
-      ]),
-      el('div', { class: 'tb-track' }, [el('div', { class: 'tb-fill', style: `width:${pct}%; background:${g.color || 'var(--river-500)'}` })]),
-      el('div', { class: 'tb-foot' }, [
-        (g.pending_count || 0) > 0 ? el('span', { class: 'tb-pend' }, `승인 대기 ${g.pending_count}`) : el('span', { class: 'tb-clear' }, '대기 없음'),
-        el('span', { class: 'tb-act' }, g.last_activity ? `최근 ${fmtAgo(g.last_activity)}` : '활동 없음'),
-        stale ? el('span', { class: 'tb-stale' }, '⚠ 정체') : null,
-      ]),
-    ]);
-  }));
-}
-
-function teacherConsent() {
-  const list = teacherData.consent || [];
-  const groups = Teacher.groups();
-  const rows = el('div', { class: 't-consent' }, list.map((c) => el('div', { class: `cs-row ${c.deletion_requested_at ? 'del' : ''}` }, [
-    el('div', { class: 'cs-info' }, [el('b', {}, c.student_label), el('small', {}, c.group_name)]),
-    el('div', { class: 'cs-toggles' }, [
-      consentToggle('보관', c.consent_archive, () => teacherAct(() => Teacher.setConsent(c.group_id, c.student_label, !c.consent_archive, c.consent_export, '교사'))),
-      consentToggle('내보내기', c.consent_export, () => teacherAct(() => Teacher.setConsent(c.group_id, c.student_label, c.consent_archive, !c.consent_export, '교사'))),
-      c.deletion_requested_at
-        ? el('span', { class: 'cs-deltag' }, '삭제요청됨')
-        : el('button', { class: 'mini del', onclick: () => { if (confirm(`${c.student_label}의 사진 삭제를 요청할까요?`)) teacherAct(() => Teacher.requestDeletion(c.consent_id)); } }, '삭제요청'),
-    ]),
-  ])));
-  // 추가 폼
-  const addForm = el('div', { class: 'cs-add' }, [
-    el('div', { class: 'cs-add-k' }, '동의 기록 추가/수정'),
-    el('select', { class: 'cs-sel', onchange: (e) => { consentForm.groupId = e.target.value; } },
-      [el('option', { value: '' }, '조 선택'), ...groups.map((g) => el('option', { value: g.id }, g.name))]),
-    el('input', { class: 'cs-name', placeholder: '학생 표시명(이니셜)', oninput: (e) => { consentForm.label = e.target.value; } }),
-    el('div', { class: 'cs-add-tg' }, [
-      consentToggle('보관', consentForm.archive, () => { consentForm.archive = !consentForm.archive; render(); }),
-      consentToggle('내보내기', consentForm.exportOk, () => { consentForm.exportOk = !consentForm.exportOk; render(); }),
-    ]),
-    el('button', { class: 'btn block', onclick: () => {
-      if (!consentForm.groupId || !consentForm.label.trim()) { alert('조와 학생 표시명을 입력하세요.'); return; }
-      teacherAct(() => Teacher.setConsent(consentForm.groupId, consentForm.label.trim(), consentForm.archive, consentForm.exportOk, '교사'));
-      consentForm = { groupId: '', label: '', archive: false, exportOk: false };
-    } }, '저장'),
-  ]);
-  return el('div', {}, [
-    el('p', { class: 'cs-note' }, '학부모 동의: 보관(캠프 후 아카이브) · 내보내기(외부 공유). 내보내기 동의 + 삭제요청 없음 인 사진만 저널 외부공유 대상.'),
-    list.length ? rows : el('div', { class: 't-empty' }, [el('p', {}, '아직 기록된 동의가 없어요.')]),
-    addForm,
-  ]);
-}
-function consentToggle(label, on, onClick) {
-  return el('button', { class: `cs-tg ${on ? 'on' : ''}`, onclick: onClick }, [el('span', { class: 'cs-box' }, on ? '✓' : ''), label]);
+// R4 #2: 교사 '전체 현황' 탭 = 학생 #/board 협동 보드 재사용(camp_progress). teacher_board 카운트표 대체.
+//   camp_progress는 승인(approved) 반영 + 폴링 → 기존 '업데이트 안 됨' 해소. 캠프 총점·M/20 개척·장소별 다녀간 조·미개척.
+function teacherCampTab() {
+  if (Teacher.localMode()) return el('div', { class: 'pad' }, [el('p', { class: 'muted' }, '데모(로컬) 모드 — 전체 현황(협동)은 온라인(교사 코드 입장)에서 표시됩니다.')]);
+  kickCamp();
+  const d = campCache.data;
+  return d ? campBoardBody(d, null) : el('div', { class: 't-skel' }, '전체 현황을 불러오는 중…');
 }
 
 // #2 수정: 교사 모달이 placeholder만 표시하던 버그 → teacher-photo 서명 URL <img> 렌더(저널 패턴 재사용).
@@ -763,7 +709,7 @@ function journalPhotoTiles(sub, variant) {
   for (let i = 0; i < Math.max(1, n); i++) {
     tiles.push(el('div', { class: 'jp-photo tex-stone' }, [
       el('span', { class: 'jp-cam' }, '🖼'),
-      el('span', { class: 'jp-src' }, '조 업로드 · 동의 보관'),
+      el('span', { class: 'jp-src' }, '조 업로드 사진'),
     ]));
   }
   const attrs = { class: `jp-photos ${variant ? 'grid' : 'full'}` };
@@ -836,8 +782,8 @@ function screenJournal() {
   }
 
   const exportBar = pages.length ? el('div', { class: 'jr-export' }, [
-    el('button', { class: 'btn block', onclick: () => exportJournal() }, '📄 저널 내보내기 (PDF·인쇄)'),
-    el('p', { class: 'jr-export-note' }, '인쇄 화면에서 “PDF로 저장”을 고르면 파일로 보관·공유할 수 있어요. 다녀온 장소·사진·기록이 담겨요.'),
+    el('button', { class: 'btn block', onclick: () => exportJournal() }, '📄 PDF로 저장'),
+    el('p', { class: 'jr-export-note' }, '인쇄 창에서 “PDF로 저장(대상: PDF)”을 고르면 파일로 보관·공유할 수 있어요. 다녀온 장소·사진·기록이 담겨요.'),
   ]) : null;
 
   return el('main', { class: 'phone tex-paper col' }, [
@@ -846,10 +792,11 @@ function screenJournal() {
   ]);
 }
 
-// #1 저널 내보내기 — 승인·동의 게이트 제거. 인쇄 친화 출력(브라우저 'PDF로 저장'). 사진은 로드된 서명 img 사용.
+// #1 저널 내보내기 — 클릭 시 **동기적으로** window.print() (사용자 제스처 컨텍스트 유지).
+//   ★버그 원인: 이전 async 체인(loadJournalPhotos().then(setTimeout(print))) → print가 제스처 밖에서 호출돼 브라우저가 무시.
+//   사진은 저널 진입 시 이미 로드됨(render의 loadJournalPhotos). @media print가 크롬 숨기고 지면만 출력 → 'PDF로 저장'.
 function exportJournal() {
-  // 사진 로드 보장 후 인쇄. @media print가 탭바·버튼 등 크롬 숨기고 지면만 출력.
-  Promise.resolve(loadJournalPhotos()).catch(() => {}).then(() => setTimeout(() => { if (typeof window.print === 'function') window.print(); }, 350));
+  if (typeof window.print === 'function') window.print();
 }
 
 // ── 조별 전용 링크 자동 입장 (#/join/<조코드>) — 학생 타이핑 0 ──
@@ -1019,11 +966,12 @@ function render() {
   else if (h.startsWith('#/journal')) { root.appendChild(screenJournal()); requestAnimationFrame(() => loadJournalPhotos()); }
   else { root.appendChild(screenHome()); kickCamp(); }
   window.scrollTo(0, 0);
-  // #/board 실시간 폴링(20s) — 진입 시 즉시 로드 + 인터벌, 이탈 시 정리.
-  if (h.startsWith('#/board')) {
+  // 협동 현황 실시간 폴링(20s) — 학생 #/board + 교사 '전체 현황' 탭. 진입 시 즉시 로드 + 인터벌, 이탈 시 정리.
+  const campView = () => location.hash.startsWith('#/board') || (location.hash.startsWith('#/teacher') && teacherTab === 'board');
+  if (campView()) {
     kickCamp();
     if (!Store.localMode() && !boardTimer) boardTimer = setInterval(() => {
-      loadCamp(true).then((u) => { if (u && location.hash.startsWith('#/board')) render(); });
+      loadCamp(true).then((u) => { if (u && campView()) render(); });
     }, 20000);
   } else if (boardTimer) { clearInterval(boardTimer); boardTimer = null; }
   if (pendingMap) {

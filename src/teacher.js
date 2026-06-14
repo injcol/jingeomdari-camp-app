@@ -1,4 +1,4 @@
-// 교사 관리자 로직 (D5) — 승인 큐·조별 현황·승인취소·사진숨김·동의(student_consent) 관리.
+// 교사 관리자 로직 (D5) — 승인 큐·승인/보완/숨김. (R4: 동의 관리 제거, 전체 현황은 app.js camp_progress)
 // production: design/teacher_admin_rpc_v1.sql RPC(teacher_code 게이트). 로컬(file://): 네트워크 0 목업으로 검증.
 // 학생 Store와 분리(역할 격리). 콘텐츠 라벨은 오프라인 seed 사용(정답 없음).
 import seed from '../data/seed.js';
@@ -32,14 +32,9 @@ function freshMock() {
     { submission_id: 's5', group_id: 'g4', group_name: '4조', mission_id: 'm_B11_2', mission_scope: 'place', place_id: 'B11', photo_refs: ['g4/m_B11_2/0'], comment: '예배당 내부', status: 'pending', created_at: ago(70), hidden: false },
     { submission_id: 's6', group_id: 'g3', group_name: '3조', mission_id: 'm_D5_2', mission_scope: 'place', place_id: 'D5', photo_refs: ['g3/m_D5_2/0'], comment: '', status: 'approved', created_at: ago(95), hidden: false },
   ];
-  const consent = [
-    { consent_id: 'c1', group_id: 'g1', group_name: '1조', student_label: '김O준', consent_archive: true, consent_export: true, deletion_requested_at: null },
-    { consent_id: 'c2', group_id: 'g1', group_name: '1조', student_label: '이O서', consent_archive: true, consent_export: false, deletion_requested_at: null },
-    { consent_id: 'c3', group_id: 'g3', group_name: '3조', student_label: '박O호', consent_archive: false, consent_export: false, deletion_requested_at: null },
-  ];
   const totals = { g1: 6, g2: 5, g3: 7, g4: 5, g5: 4 };
   const checkin = { g1: 4, g2: 2, g3: 5, g4: 1, g5: 0 };
-  return { groups, subs, consent, totals, checkin };
+  return { groups, subs, totals, checkin };
 }
 let mock = null;
 function M() {
@@ -106,22 +101,5 @@ export const Teacher = {
     return q || [];
   },
 
-  async consentList() {
-    if (isLocalMode()) return M().consent;
-    return Supabase.rpc('teacher_consent_list', { p_teacher_code: tcode });
-  },
-  async setConsent(groupId, label, archive, exportOk, by) {
-    if (isLocalMode()) {
-      const c = M().consent.find((x) => x.group_id === groupId && x.student_label === label);
-      if (c) { c.consent_archive = archive; c.consent_export = exportOk; }
-      else M().consent.push({ consent_id: 'c' + Date.now(), group_id: groupId, group_name: (M().groups.find((g) => g[0] === groupId) || [])[1] || groupId, student_label: label, consent_archive: archive, consent_export: exportOk, deletion_requested_at: null });
-      saveMock(); return;
-    }
-    return Supabase.rpc('teacher_set_consent', { p_teacher_code: tcode, p_group_id: groupId, p_student_label: label, p_archive: archive, p_export: exportOk, p_recorded_by: by || null });
-  },
-  async requestDeletion(consentId) {
-    if (isLocalMode()) { const c = M().consent.find((x) => x.consent_id === consentId); if (c) c.deletion_requested_at = new Date().toISOString(); saveMock(); return; }
-    return Supabase.rpc('teacher_request_deletion', { p_teacher_code: tcode, p_consent_id: consentId });
-  },
   groups() { return M().groups.map(([id, name, color]) => ({ id, name, color })); },
 };
