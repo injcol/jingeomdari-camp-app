@@ -159,7 +159,8 @@
 .pc-sub{font-size:11.5px; color:var(--stone-d);}
 .pc-tags{display:flex; flex-wrap:wrap; gap:5px;}
 .pcard .btn{padding:10px; font-size:13.5px; margin-top:auto;}
-.start-btn{margin:20px 16px 24px; width:calc(100% - 32px);}
+/* .btn.block(width:100%)보다 우선해야 16px 인셋 폭이 적용됨 — 안 그러면 margin 32px만큼 우측이 화면 밖으로 */
+.btn.block.start-btn{margin:20px 16px 24px; width:calc(100% - 32px);}
 .pad0{padding:0 18px;}
 
 /* 네이버 지도(실연동) wrap + fallback */
