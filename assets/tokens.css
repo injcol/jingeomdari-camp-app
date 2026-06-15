@@ -23,18 +23,19 @@
 }
 
 *{box-sizing:border-box;}
-html,body{
-  margin:0; padding:0; width:100%;
-  overflow-x:hidden;          /* 가로 오버플로 차단 → 드래그 시 좌우 흔들림 제거 */
-  overscroll-behavior:none;   /* 끝단 러버밴드 바운스 억제(스마트폰 고정감) */
-}
+/* 모바일 셸 잠금: 바디 자체 스크롤 0 → iOS 좌우 흔들림·끝단 바운스 원천 차단.
+   실제 스크롤은 .phone(앱 셸)이 세로로만 담당하고 가로는 클립. */
+html{height:100%;}
 body{
-  min-height:100vh; min-height:100dvh; /* dvh: 모바일 주소창 변화에도 화면에 꼭 맞게 */
+  margin:0; padding:0; width:100%; height:100%;
+  position:fixed; inset:0;        /* iOS에서 바디가 움직이지 않도록 고정 */
+  overflow:hidden; overscroll-behavior:none;
   /* 본문: 가독 한글 산세리프 — Inter/Roboto/system 디폴트 금지. 가독성 상향: base 17px */
   font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   font-size:17px; color:var(--ink); line-height:1.72;
   -webkit-font-smoothing:antialiased;
 }
+#app{height:100%;}
 /* 디스플레이: 묵직한 한글 명조(붓·먹 느낌) — type-as-graphic */
 .display{
   font-family:"Nanum Myeongjo","Gowun Batang","AppleMyungjo","Noto Serif KR",serif;
@@ -82,15 +83,20 @@ body{
 .mapslot .badge-map{position:absolute; left:9px; top:9px; font-size:11px; color:#175055; background:rgba(243,236,221,.92); padding:4px 9px; border-radius:7px; font-weight:700;}
 .mapslot .ph-note{position:absolute; left:0; right:0; bottom:0; font-size:11px; color:#274233; background:rgba(243,236,221,.9); padding:7px 10px;}
 
-/* 앱 셸 — 모바일 우선: 화면에 꽉 차게(프레임·여백 없음) */
+/* 앱 셸 — 모바일 우선: 뷰포트를 꽉 채우고 셸 내부에서만 세로 스크롤(가로 스크롤 불가) */
 .phone{
   width:100%; max-width:var(--maxw); margin:0 auto; position:relative;
-  min-height:100vh; min-height:100dvh;
+  height:100%;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
 }
-/* 데스크톱/태블릿 미리보기(보고용)에서는 디바이스 프레임(카드) 복원 */
+/* 데스크톱/태블릿 미리보기(보고용)에서는 바디 스크롤 복원 + 디바이스 프레임(카드) */
 @media (min-width:480px){
+  html{height:auto;}
+  body{position:static; height:auto; overflow:auto;}
+  #app{height:auto;}
   .phone{
-    margin:22px auto; min-height:880px;
+    height:auto; min-height:880px; margin:22px auto;
     border-radius:30px; overflow:hidden;
     box-shadow:var(--shadow); border:1px solid var(--line);
   }
