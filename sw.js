@@ -5,7 +5,7 @@
 // ⚠ VERSION은 배포 파이프라인이 자동 치환(master 스테이징 시 sed로 배포 타임스탬프 주입, 예: v20260612-185928).
 //   수동 bump 불필요 — 새 배포마다 sw.js 바이트가 바뀌어 브라우저가 신본 감지→skipWaiting→재방문 시 교체.
 //   ★아래 VERSION 라인 형식을 파이프라인 sed가 매칭하므로 라인 구조 유지. file://는 SW 미지원(https/localhost 전용).
-const VERSION = 'v20260615-111437';
+const VERSION = 'v20260615-111750';
 const CACHE = `jgd-${VERSION}`;
 
 // 정적 사전캐시(오프라인 첫 진입 대비). 개별 add로 일부 실패 무시. seed.js는 폴백용(런타임은 네트워크 우선).
@@ -17,9 +17,13 @@ const PRECACHE = [
   './data/seed.js',
 ];
 
-// 네트워크 우선 대상: HTML 문서(앱 셸) + 런타임 데이터(seed.js)
+// 네트워크 우선 대상: HTML 문서(앱 셸) + 런타임 데이터(seed.js) + CSS/JS 코드.
+//   CSS·JS도 네트워크 우선으로 둬서 배포 즉시 반영(캐시는 오프라인 폴백). iOS SW 갱신 지연으로
+//   구버전 CSS가 고착되던 문제 해소. (캐시 우선 대상은 폰트·이미지 등 정적 에셋만)
 function isNetworkFirst(url) {
-  return url.pathname.endsWith('/') || url.pathname.endsWith('.html') || url.pathname.endsWith('/data/seed.js');
+  const p = url.pathname;
+  return p.endsWith('/') || p.endsWith('.html') || p.endsWith('/data/seed.js')
+    || p.endsWith('.css') || p.endsWith('.js');
 }
 
 // HTTP 캐시(GH Pages max-age=600) 우회 — 구본 재수록 방지. 항상 origin에서 신본 fetch.
