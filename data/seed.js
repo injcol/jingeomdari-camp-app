@@ -518,40 +518,6 @@ export default {
       }
     },
     {
-      "placeId": "A6",
-      "name": "서울로 7017",
-      "themeTags": [
-        "ecology"
-      ],
-      "routeCategory": "select",
-      "planner": {
-        "stayMinutes": 40,
-        "hubMinutes": 26,
-        "transferCount": 0,
-        "routeType": "noTransfer",
-        "verified": false
-      },
-      "basePoints": 25,
-      "indoorRaw": "야외(그늘X)",
-      "indoor": false,
-      "indoorCooled": false,
-      "photoFriendly": true,
-      "address": null,
-      "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
-      },
-      "naverMap": {
-        "lat": 37.55674,
-        "lng": 126.9706,
-        "naverPlaceId": null
-      }
-    },
-    {
       "placeId": "A9",
       "name": "영천시장",
       "themeTags": [
@@ -582,40 +548,6 @@ export default {
       "naverMap": {
         "lat": 37.57048,
         "lng": 126.96114,
-        "naverPlaceId": null
-      }
-    },
-    {
-      "placeId": "D3",
-      "name": "세운옥상",
-      "themeTags": [
-        "fun"
-      ],
-      "routeCategory": "select",
-      "planner": {
-        "stayMinutes": 20,
-        "hubMinutes": 12,
-        "transferCount": 0,
-        "routeType": "walk",
-        "verified": false
-      },
-      "basePoints": 10,
-      "indoorRaw": "야외",
-      "indoor": false,
-      "indoorCooled": false,
-      "photoFriendly": true,
-      "address": null,
-      "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
-      },
-      "naverMap": {
-        "lat": 37.56914,
-        "lng": 126.99524,
         "naverPlaceId": null
       }
     },
@@ -684,6 +616,143 @@ export default {
       "naverMap": {
         "lat": 37.5708,
         "lng": 126.97791,
+        "naverPlaceId": null
+      }
+    },
+    {
+      "placeId": "A11",
+      "name": "경교장",
+      "themeTags": [
+        "history"
+      ],
+      "routeCategory": "select",
+      "planner": {
+        "stayMinutes": 40,
+        "hubMinutes": 26,
+        "transferCount": 1,
+        "routeType": "1transfer",
+        "verified": false
+      },
+      "basePoints": 25,
+      "indoorRaw": "○",
+      "indoor": true,
+      "indoorCooled": false,
+      "photoFriendly": true,
+      "address": null,
+      "photo": {
+        "url": null,
+        "source": null,
+        "license": null,
+        "attribution": null,
+        "needsFieldShoot": true,
+        "status": "placeholder"
+      },
+      "naverMap": {
+        "lat": 37.5703,
+        "lng": 126.9685,
+        "naverPlaceId": null
+      }
+    },
+    {
+      "placeId": "A12",
+      "name": "딜쿠샤",
+      "themeTags": [
+        "history"
+      ],
+      "routeCategory": "select",
+      "planner": {
+        "stayMinutes": 40,
+        "hubMinutes": 33,
+        "transferCount": 1,
+        "routeType": "1transfer",
+        "verified": false
+      },
+      "basePoints": 35,
+      "indoorRaw": "○",
+      "indoor": true,
+      "indoorCooled": false,
+      "photoFriendly": true,
+      "address": null,
+      "photo": {
+        "url": null,
+        "source": null,
+        "license": null,
+        "attribution": null,
+        "needsFieldShoot": true,
+        "status": "placeholder"
+      },
+      "naverMap": {
+        "lat": 37.5722,
+        "lng": 126.9598,
+        "naverPlaceId": null
+      }
+    },
+    {
+      "placeId": "A13",
+      "name": "안중근의사기념관",
+      "themeTags": [
+        "history"
+      ],
+      "routeCategory": "select",
+      "planner": {
+        "stayMinutes": 60,
+        "hubMinutes": 38,
+        "transferCount": 1,
+        "routeType": "1transfer",
+        "verified": false
+      },
+      "basePoints": 40,
+      "indoorRaw": "◎(냉방)",
+      "indoor": true,
+      "indoorCooled": true,
+      "photoFriendly": true,
+      "address": null,
+      "photo": {
+        "url": null,
+        "source": null,
+        "license": null,
+        "attribution": null,
+        "needsFieldShoot": true,
+        "status": "placeholder"
+      },
+      "naverMap": {
+        "lat": 37.5517,
+        "lng": 126.9793,
+        "naverPlaceId": null
+      }
+    },
+    {
+      "placeId": "B7",
+      "name": "명동성당",
+      "themeTags": [
+        "faith",
+        "history"
+      ],
+      "routeCategory": "select",
+      "planner": {
+        "stayMinutes": 30,
+        "hubMinutes": 20,
+        "transferCount": 1,
+        "routeType": "1transfer",
+        "verified": false
+      },
+      "basePoints": 20,
+      "indoorRaw": "○",
+      "indoor": true,
+      "indoorCooled": false,
+      "photoFriendly": true,
+      "address": null,
+      "photo": {
+        "url": null,
+        "source": null,
+        "license": null,
+        "attribution": null,
+        "needsFieldShoot": true,
+        "status": "placeholder"
+      },
+      "naverMap": {
+        "lat": 37.5634,
+        "lng": 126.9873,
         "naverPlaceId": null
       }
     }
@@ -847,6 +916,19 @@ export default {
       "hasAnswer": true
     },
     {
+      "missionId": "m_B7_1",
+      "type": "photo_reenact",
+      "evidenceTypes": [
+        "group_photo"
+      ],
+      "requiresReservation": false,
+      "outdoor": true,
+      "fallbackMission": null,
+      "brief": "명동성당 첨탑(고딕 건물)을 배경으로 조별 단체 사진",
+      "placeId": "B7",
+      "hasAnswer": false
+    },
+    {
       "missionId": "m_A3_1",
       "type": "observe_quiz",
       "evidenceTypes": [
@@ -938,6 +1020,45 @@ export default {
       "hasAnswer": true
     },
     {
+      "missionId": "m_A11_1",
+      "type": "observe_quiz",
+      "evidenceTypes": [
+        "photo"
+      ],
+      "requiresReservation": false,
+      "outdoor": false,
+      "fallbackMission": null,
+      "brief": "이 집에서 마지막을 보낸 임시정부 주석이 누구인지 찾아 사진+메모",
+      "placeId": "A11",
+      "hasAnswer": true
+    },
+    {
+      "missionId": "m_A12_1",
+      "type": "observe_quiz",
+      "evidenceTypes": [
+        "photo"
+      ],
+      "requiresReservation": false,
+      "outdoor": false,
+      "fallbackMission": null,
+      "brief": "이 집 주인이 어떤 일을 해서 3·1운동을 세계에 알렸는지 찾아 사진+메모",
+      "placeId": "A12",
+      "hasAnswer": true
+    },
+    {
+      "missionId": "m_A13_1",
+      "type": "photo_reenact",
+      "evidenceTypes": [
+        "group_photo"
+      ],
+      "requiresReservation": false,
+      "outdoor": false,
+      "fallbackMission": null,
+      "brief": "안중근 의사의 유묵(글씨) 가운데 가장 마음에 닿는 한 점 앞에서 조별 단체 사진",
+      "placeId": "A13",
+      "hasAnswer": false
+    },
+    {
       "missionId": "m_A5_1",
       "type": "photo_reenact",
       "evidenceTypes": [
@@ -948,19 +1069,6 @@ export default {
       "fallbackMission": null,
       "brief": "청계천 물길 배경 조별 단체 사진",
       "placeId": "A5",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_A6_1",
-      "type": "photo_reenact",
-      "evidenceTypes": [
-        "group_photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "보행길 배경 조별 단체 사진 (※그늘 없음 → 해질녘·얼음물)",
-      "placeId": "A6",
       "hasAnswer": false
     },
     {
@@ -975,19 +1083,6 @@ export default {
       "fallbackMission": "대표 먹거리집 간판·메뉴를 사진으로 담기",
       "brief": "시장에서 간식/밥 먹고 인증샷(대표 먹거리집 찾기)",
       "placeId": "A9",
-      "hasAnswer": false
-    },
-    {
-      "missionId": "m_D3_1",
-      "type": "photo_reenact",
-      "evidenceTypes": [
-        "group_photo"
-      ],
-      "requiresReservation": false,
-      "outdoor": true,
-      "fallbackMission": null,
-      "brief": "옥상에서 종묘 기와지붕 + 도심 빌딩을 한 컷에 (난간 안전 인솔)",
-      "placeId": "D3",
       "hasAnswer": false
     },
     {
@@ -1060,6 +1155,7 @@ export default {
         "A2",
         "A10",
         "A8",
+        "A11",
         "A1"
       ]
     },
@@ -1068,7 +1164,6 @@ export default {
       "type": "recommended",
       "placeIds": [
         "B6",
-        "D3",
         "D4"
       ]
     },
@@ -1077,6 +1172,7 @@ export default {
       "type": "recommended",
       "placeIds": [
         "A3",
+        "A12",
         "A9",
         "C2"
       ]
@@ -1086,8 +1182,15 @@ export default {
       "type": "recommended",
       "placeIds": [
         "A5",
-        "A6",
         "A15"
+      ]
+    },
+    {
+      "courseId": "rc_myeongdong",
+      "type": "recommended",
+      "placeIds": [
+        "B7",
+        "A13"
       ]
     }
   ],
@@ -1112,47 +1215,58 @@ export default {
         "A2",
         "A10",
         "A8",
+        "A11",
         "A1"
       ],
       "dir": "종로3가 환승/시청",
-      "est": "공통3 + 약 3.5시간",
-      "flow": "허브→연동교회 묵상→광화문 묶음(냉방거점 역사박물관·교보문고 활용)→광장시장 식사→허브 복귀"
+      "est": "공통3 + 약 4시간",
+      "flow": "허브→연동교회 묵상→광화문 묶음(냉방거점 역사박물관·교보문고 활용)→경교장(백범 집무실)→광장시장 식사→허브 복귀"
     },
     {
       "id": "rc_insadong",
       "title": "인사동·종로 신앙·흥미길",
       "placeIds": [
         "B6",
-        "D3",
         "D4"
       ],
       "dir": "허브 도보권(지하철 불요)",
       "est": "공통3 + 약 3시간",
-      "flow": "허브→연동교회(2분)→광장시장 식사(8분)→세운옥상→익선동→승동교회→허브 (전 구간 도보 루프)"
+      "flow": "허브→연동교회(2분)→광장시장 식사(8분)→익선동→승동교회→허브 (전 구간 도보 루프)"
     },
     {
       "id": "rc_seodaemun",
       "title": "서대문 독립운동·이웃길",
       "placeIds": [
         "A3",
+        "A12",
         "A9",
         "C2"
       ],
       "dir": "독립문 1환승",
-      "est": "공통3 + 약 4시간",
-      "flow": "허브→연동교회 묵상→종로5가역 1호선 오전 출발(원거리 묶음)→서대문 묶음→광장시장 식사→허브 복귀"
+      "est": "공통3 + 약 4~5시간",
+      "flow": "허브→연동교회 묵상→종로5가역 1호선 오전 출발(원거리 묶음)→서대문 묶음(서대문형무소·딜쿠샤·이회영기념관)→광장시장 식사→허브 복귀"
     },
     {
       "id": "rc_eco",
       "title": "생태·선교길",
       "placeIds": [
         "A5",
-        "A6",
         "A15"
       ],
-      "dir": "청계천 도보+서울역/합정",
+      "dir": "청계천 도보+합정",
       "est": "공통3 + 약 4시간(양화진 반일)",
-      "flow": "허브→연동교회 묵상→청계천(허브 도보 8분) 도보 동선→서울로/양화진(반일)→광장시장 식사→허브 복귀"
+      "flow": "허브→연동교회 묵상→청계천(허브 도보 8분) 도보 동선→양화진(반일)→광장시장 식사→허브 복귀"
+    },
+    {
+      "id": "rc_myeongdong",
+      "title": "명동·남산 신앙·평화길",
+      "placeIds": [
+        "B7",
+        "A13"
+      ],
+      "dir": "명동~남산 도보/케이블카",
+      "est": "공통3 + 약 3~4시간",
+      "flow": "허브→연동교회 묵상→명동성당(6월항쟁 성지)→남산 안중근의사기념관(냉방 거점)→광장시장 식사→허브 복귀"
     }
   ],
   "readings": [
@@ -1173,6 +1287,33 @@ export default {
       "theme": "neighbor",
       "title": "함께 우는 자리, 광화문광장",
       "body": "세종대왕과 이순신 장군의 동상이 내려다보는 너른 광장. 광화문광장은 2009년에 처음 만들어졌고, 2022년에 지금의 모습으로 새로 열렸어요.\n\n이곳은 그냥 빈터가 아니에요. 기쁜 날엔 축제가 열리고, 억울한 일이 생기면 사람들이 모여 목소리를 내요. 오랫동안 이 광장은, 사람들이 자기 이야기를 들어 달라고 외치던 자리였어요. 그 목소리 하나하나에는 저마다의 사연이 담겨 있고요.\n\n성경은 \"우는 사람들과 함께 울라\"고 말해요(로마서 12장 15절). 함께하는 마음은 거창한 데서 시작되는 게 아니에요. 누군가의 이야기에 잠시 걸음을 멈추고 귀를 기울이는 것 — 거기서부터 시작되거든요. 광장을 천천히 둘러보면서, 오늘 이곳엔 어떤 목소리들이 있는지 살펴볼까요(정중하게요).\n\n**질문.** 내가 그동안 외면해 온 목소리가 있다면, 무엇일까요?"
+    },
+    {
+      "readingId": "R-A11",
+      "servedPlaceIds": [
+        "A11"
+      ],
+      "theme": "history",
+      "title": "마지막 집무실, 경교장",
+      "body": "광화문 가까운 큰 병원 안에, 하얀 2층 양옥집이 한 채 숨어 있어요. 백범 김구 선생이 마지막으로 지내던 집, 경교장이에요.\n\n1945년 광복이 되자, 중국에서 독립운동을 이끌던 대한민국임시정부 요인들이 고국으로 돌아왔어요. 김구 선생은 이 집을 임시정부의 활동 공간이자 자신의 집무실로 삼았죠. 나라를 어떻게 다시 세울지, 남과 북이 갈라지지 않게 하려면 어떻게 해야 할지 — 수많은 사람들이 이 응접실을 드나들며 의논했어요. 그러다 1949년, 김구 선생은 바로 이 집 2층에서 흉탄에 맞아 세상을 떠났어요. 지금도 그 방 유리창엔 그날의 총탄 자국이 남아 있어요.\n\n평생을 나라의 독립과 통일을 위해 바친 한 사람의 마지막 자리. 그가 품었던 '하나 된 나라'의 꿈은 아직 우리 손에 남아 있어요.\n\n**질문.** 김구 선생이 끝까지 놓지 않았던 꿈처럼, 내가 오래 품고 싶은 꿈은 무엇인가요?"
+    },
+    {
+      "readingId": "R-A12",
+      "servedPlaceIds": [
+        "A12"
+      ],
+      "theme": "history",
+      "title": "세상에 알린 집, 딜쿠샤",
+      "body": "인왕산 자락, 큰 은행나무 곁에 붉은 벽돌집이 한 채 있어요. 이름은 '딜쿠샤' — 힌디어로 '기쁜 마음의 궁전'이라는 뜻이에요.\n\n이 집의 주인은 미국 사람 앨버트 테일러였어요. 그는 한국에서 사업을 하면서, 동시에 외국 통신사(AP)의 기자이기도 했죠. 1919년 3·1운동이 일어났을 때, 그는 병원에서 우연히 독립선언서를 손에 넣었어요. 그리고 그 소식과, 일본군이 제암리에서 마을 사람들을 학살한 끔찍한 사건을 기사로 써서 전 세계에 알렸어요. 일본의 감시를 피해, 갓난아기 이불 속에 원고를 숨겨 빼돌렸다는 이야기도 전해져요.\n\n아무도 모르게 묻힐 뻔한 일을, 누군가는 위험을 무릅쓰고 세상에 알렸어요. 진실을 '보는 것'과 그것을 '말하는 것'은 다른 용기거든요.\n\n**질문.** 모두가 모른 척할 때, 진실을 말하려면 어떤 용기가 필요할까요?"
+    },
+    {
+      "readingId": "R-A13",
+      "servedPlaceIds": [
+        "A13"
+      ],
+      "theme": "history",
+      "title": "한 손가락의 약속, 안중근의사기념관",
+      "body": "남산 자락에 안중근 의사를 기리는 기념관이 있어요. 안으로 들어가면, 그의 짧지만 뜨거웠던 삶이 펼쳐져요.\n\n안중근 의사는 1909년, 우리나라를 빼앗는 데 앞장선 일본의 이토 히로부미를 하얼빈역에서 처단했어요. 붙잡힌 그는 자신을 '테러범'이 아니라 '대한의군 참모중장'이라고 당당히 밝혔어요. 단지 미움 때문이 아니라, 동양 전체가 평화롭게 함께 사는 길을 막은 사람을 멈춰 세운 거라고요. 그는 감옥에서 『동양평화론』을 쓰다가 끝내 마치지 못하고 순국했어요. 손가락을 잘라 '대한독립'을 다짐했던 그 손으로 쓴 글씨(유묵)들이 지금도 남아 있어요.\n\n미움이 아니라 평화를 위해 목숨을 건 사람. 안중근 의사가 꿈꾼 건, 누구도 빼앗기지 않는 세상이었어요.\n\n**질문.** 내가 손가락 걸고 지키고 싶은 약속 하나는 무엇인가요?"
     },
     {
       "readingId": "R-A15",
@@ -1218,15 +1359,6 @@ export default {
       "theme": "ecology",
       "title": "되살아난 물길, 청계천",
       "body": "도시 한복판으로 물이 흘러요. 빌딩 숲 사이를 가르며 흐르는 이 물길이 바로 청계천이에요. 원래는 조선시대에 한양을 가로지르던 하천이었는데, 도시가 커지면서 콘크리트로 덮였고(복개), 그 위로 고가도로까지 놓였어요. 2003년부터 2005년까지 이 덮개를 걷어내고, 다시 물길을 열었죠.\n\n그런데 자세히 들여다보면, 이 물은 저절로 흐르는 물이 아니에요. 한강이랑 지하수를 끌어와서 흘려보내는, 사람이 만든 물길에 가깝거든요. 보기엔 깨끗해도, 진짜 생태계가 살아 숨 쉬기엔 한계가 있다는 지적도 있어요. 자연을 되살리는 일이 얼마나 어려운지를, 이 물길이 조용히 말해 주는 것 같아요.\n\n하나님은 세상을 지으시고 \"보시기에 좋았다\"고 하셨어요. 그리고 맡겨진 걸 잘 가꾸고 지키는 '청지기'로 우리를 부르셨죠. 편리함과 생명 사이에서, 우리는 무엇을 택하고 있을까요. 물길을 따라 걸으면서, 도시 속 작은 생명들을 한번 찾아볼까요.\n\n**질문.** 생명을 위해서라면, 내가 포기할 수 있는 편리함은 무엇일까요?"
-    },
-    {
-      "readingId": "R-A6",
-      "servedPlaceIds": [
-        "A6"
-      ],
-      "theme": "ecology",
-      "title": "버리지 않고 살려내다, 서울로 7017",
-      "body": "서울역 위로 길게 뻗은 길. 예전엔 자동차가 쌩쌩 달리던 고가도로였지만, 지금은 사람이 걷는 길이 됐어요.\n\n이 고가도로는 1970년에 지어졌어요. 세월이 흘러 낡고 위험해지자, 처음엔 아예 다 헐어 버리자는 얘기가 나왔죠. 그런데 서울시는 철거 대신 '다시 살리는' 길을 택했고, 2017년에 약 1km 길이의 보행길로 새로 열었어요. 길 위에는 여러 가지 나무와 꽃을 심어서, 작은 수목원처럼 꾸몄고요. 이름의 '7017'은, 1970년에 지어져서 2017년에 다시 태어났다는 뜻을 담고 있어요.\n\n낡았다고 버리는 건 쉬워요. 하지만 버리지 않고 새로운 쓸모를 찾아 주는 데는, 상상력과 마음이 필요하거든요. 하나님도 버려진 것, 쓸모없어 보이는 걸 다시 들어 쓰시는 분이에요. 자동차가 아니라 사람이, 속도가 아니라 생명이 중심이 되는 길을 천천히 걸어 볼까요.\n\n**질문.** 내 주변에 '철거'가 아니라 '재생'이 필요한 건 무엇일까요?"
     },
     {
       "readingId": "R-A7",
@@ -1292,6 +1424,15 @@ export default {
       "body": "인사동 골목 안, 사람들의 발길에서 살짝 비켜선 곳에 승동교회가 있어요.\n\n이 교회는 1893년에 무어 선교사가 시작한 '곤당골교회'에서 비롯됐고, 1905년에 지금 자리에 자리를 잡았어요. 놀라운 건 이 교회가 품은 사람들이에요. 그 시절 가장 천대받던 신분인 백정 박성춘이 여기서 세례를 받고 교인이 됐고, 훗날 장로로까지 세워졌어요. 양반과 백정이 한자리에서 함께 예배를 드린다는 건, 그 시대엔 거의 혁명 같은 일이었죠. 그의 아들 박서양은 우리나라 초기 의사 가운데 한 사람이 됐고요. 1919년 3·1운동 때에는 학생 대표들이 이 교회에 모여 만세운동을 준비하기도 했어요.\n\n복음은 가장 높은 자리가 아니라, 가장 낮은 자리에서 빛나요. 아무도 곁에 두려 하지 않던 사람을 형제라고 부른 교회 — 그게 바로 이 작은 예배당이 품은 이야기예요.\n\n**질문.** 우리 공동체가 가장 먼저 환영해야 할 사람은 누구일까요?"
     },
     {
+      "readingId": "R-B7",
+      "servedPlaceIds": [
+        "B7"
+      ],
+      "theme": "faith",
+      "title": "낮은 자리를 지킨 성당, 명동성당",
+      "body": "명동 한복판, 번화한 거리 위로 뾰족한 첨탑이 솟아 있어요. 우리나라 최초의 고딕 양식 성당, 명동성당이에요.\n\n이 성당은 1898년에 완성됐어요. 100년이 훌쩍 넘은 붉은 벽돌 건물이죠. 그런데 명동성당이 특별한 건 오래되어서만은 아니에요. 1987년, 사람들이 \"내 손으로 대통령을 뽑게 해 달라\"며 거리로 나섰을 때(6월 민주항쟁), 쫓기던 시민과 학생들이 이 성당으로 피해 들어왔어요. 성당은 그들을 내쫓지 않고 품어 주었죠. 경찰이 들이닥치려 하자 성직자들이 \"우리를 밟고 지나가라\"며 막아섰다는 이야기도 전해져요. 그렇게 명동성당은 '약한 사람들이 숨을 수 있는 자리'가 되었어요.\n\n교회와 성당은 화려한 건물이 아니라, 쫓기는 이를 품는 자리일 때 가장 빛나요.\n\n**질문.** 누군가 힘들 때 숨어들 수 있는 '품 같은 자리'가 되어 본 적 있나요?"
+    },
+    {
       "readingId": "R-C2",
       "servedPlaceIds": [
         "C2"
@@ -1308,15 +1449,6 @@ export default {
       "theme": "history",
       "title": "기계가 아니다, 전태일",
       "body": "청계천 버들다리(전태일다리) 위에, 작은 동상 하나가 사람들을 바라보고 있어요. 그 발밑에는 시민들이 직접 새긴 수천 개의 글귀 동판이 깔려 있고요.\n\n전태일은 1948년에 태어나서, 평화시장에서 옷을 만들던 재단사였어요. 그는 어린 여공들이 햇빛도 안 드는 좁은 다락방에서 하루 열네 시간씩 일하는 모습을 봤어요. 근로기준법에 노동자를 보호하는 규정이 분명히 있는데도, 아무도 지키질 않았죠. 그는 동료들과 모임을 만들고 이 법을 알리려 애썼지만, 세상은 좀처럼 움직이지 않았어요. 결국 1970년 11월 13일, 그는 \"근로기준법을 준수하라\", \"우리는 기계가 아니다\"라고 외치며 스스로 몸을 불살랐어요. 겨우 스물둘이었답니다. 그의 어머니 이소선은 아들의 약속을 평생 이어 갔고요.\n\n말할 힘조차 없던 가장 약한 이웃을 위해, 그는 자기 자신을 내어줬어요. 누군가를 위해 목숨을 내어주신 분을, 우리는 알고 있잖아요.\n\n**질문.** 약한 이웃을 위해 내가 내려놓을 수 있는 건 무엇일까요?"
-    },
-    {
-      "readingId": "R-D3",
-      "servedPlaceIds": [
-        "D3"
-      ],
-      "theme": "fun",
-      "title": "도시를 내려다보며, 세운옥상",
-      "body": "오래된 상가 건물 옥상에 올라서면, 갑자기 시야가 탁 트여요. 한쪽으론 종묘의 기와지붕이, 다른 쪽으론 남산이랑 빌딩 숲이 한눈에 들어와요.\n\n이곳은 세운상가예요. 1968년에 지어진 우리나라 최초의 주상복합 건물(집과 상가가 한 건물에 같이 있는 곳)인데, 건축가 김수근이 설계했고 한때는 최첨단 전자상가로 이름을 날렸어요. '여기서 못 구하는 전자제품 부품이 없다'던 시절도 있었죠. 세월이 흘러 낡고 잊혔지만, 2013년부터 '다시세운'이라는 도시 재생 사업을 통해 옥상 전망대가 열리면서, 사람들이 다시 찾는 곳이 됐어요.\n\n높은 곳에 서면 도시가 달라 보여요. 평소 골목에서 보던 풍경이, 위에서는 하나의 커다란 그림이 되거든요. 하나님이 이 도시를 내려다보신다면 어떤 마음이실까요. 그 시선을 잠시 빌려서, 우리가 걸어온 길이랑 이 도시를 함께 바라볼까요.\n\n**질문.** 이 도시에서 내가 특별히 사랑하고, 기도하고 싶은 한 곳은 어디일까요?"
     },
     {
       "readingId": "R-D4",
