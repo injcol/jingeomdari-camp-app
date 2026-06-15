@@ -1,6 +1,7 @@
 /* 앱 셸 스타일 — D2 학생 플로우 정밀화. tokens.css(어스 팔레트·질감·칩·버튼·탭) 위에 화면 컴포넌트. */
 .phone.col{display:flex; flex-direction:column;}
-.scroll{flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;}
+/* min-height:0 필수 — flex:1 자식이 내용만큼 부풀어 탭바/버튼을 밀어내는 현상 방지(셸 내부에서만 스크롤) */
+.scroll{flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;}
 .grow{flex:1;}
 .pad{padding:22px;}
 .muted{color:var(--stone-d); font-size:13.5px; line-height:1.6;}
