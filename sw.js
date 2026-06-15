@@ -5,13 +5,14 @@
 // ⚠ VERSION은 배포 파이프라인이 자동 치환(master 스테이징 시 sed로 배포 타임스탬프 주입, 예: v20260612-185928).
 //   수동 bump 불필요 — 새 배포마다 sw.js 바이트가 바뀌어 브라우저가 신본 감지→skipWaiting→재방문 시 교체.
 //   ★아래 VERSION 라인 형식을 파이프라인 sed가 매칭하므로 라인 구조 유지. file://는 SW 미지원(https/localhost 전용).
-const VERSION = 'v20260615-113217';
+const VERSION = 'v20260615-114505';
 const CACHE = `jgd-${VERSION}`;
 
 // 정적 사전캐시(오프라인 첫 진입 대비). 개별 add로 일부 실패 무시. seed.js는 폴백용(런타임은 네트워크 우선).
 const PRECACHE = [
   './', './index.html', './manifest.webmanifest',
   './assets/tokens.css', './assets/app.css', './assets/icon.svg', './assets/placeholder_place.svg',
+  './assets/apple-touch-icon.png', './assets/icon-192.png', './assets/icon-512.png',
   './src/app.js', './src/store.js', './src/util.js', './src/map.js', './src/teacher.js',
   './src/supabase.js', './src/supabase_config.js', './src/map_config.js',
   './data/seed.js',
