@@ -62,12 +62,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/D5.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "광장시장 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57006,
@@ -96,12 +96,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/C3.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "전태일기념관 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.56842,
@@ -130,12 +130,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A7.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "정동제일교회 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.56541,
@@ -164,12 +164,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/B1.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "배재학당역사박물관 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.56401,
@@ -198,12 +198,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/B2.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "이화박물관(심슨기념관) — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.56608,
@@ -232,12 +232,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/B6.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "승동교회 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57158,
@@ -266,12 +266,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A15.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "양화진선교사묘원 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.54654,
@@ -300,12 +300,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A3.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "서대문형무소역사관 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57461,
@@ -334,12 +334,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A4.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "중명전 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.56673,
@@ -368,12 +368,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A2.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "대한민국역사박물관 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57399,
@@ -436,12 +436,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "replace"
+        "url": "assets/places/A1.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "평화의 소녀상 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57497,
@@ -470,12 +470,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/C2.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "이회영기념관 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57296,
@@ -504,10 +504,10 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": "https://www.kogl.or.kr/recommend/recommendView.do?recommendIdx=3120",
-        "source": "한국관광공사(공공누리 포털)",
-        "license": "공공누리 제1유형",
-        "attribution": "본 저작물은 한국관광공사에서 공공누리 제1유형으로 개방한 '청계광장'을 이용하였으며, 공공누리(www.kogl.or.kr)에서 무료로 다운로드할 수 있습니다.",
+        "url": "assets/places/A5.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "청계천(청계광장) — 현장 촬영",
         "needsFieldShoot": false,
         "status": "confirmed"
       },
@@ -572,12 +572,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A9.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "영천시장 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57048,
@@ -640,12 +640,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/D4.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "익선동 한옥거리 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57344,
@@ -674,12 +674,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A8.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "교보문고 광화문점 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.5708,
