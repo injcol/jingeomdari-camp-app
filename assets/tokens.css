@@ -23,8 +23,13 @@
 }
 
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
+html,body{
+  margin:0; padding:0; width:100%;
+  overflow-x:hidden;          /* 가로 오버플로 차단 → 드래그 시 좌우 흔들림 제거 */
+  overscroll-behavior:none;   /* 끝단 러버밴드 바운스 억제(스마트폰 고정감) */
+}
 body{
+  min-height:100vh; min-height:100dvh; /* dvh: 모바일 주소창 변화에도 화면에 꼭 맞게 */
   /* 본문: 가독 한글 산세리프 — Inter/Roboto/system 디폴트 금지. 가독성 상향: base 17px */
   font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   font-size:17px; color:var(--ink); line-height:1.72;
@@ -77,11 +82,18 @@ body{
 .mapslot .badge-map{position:absolute; left:9px; top:9px; font-size:11px; color:#175055; background:rgba(243,236,221,.92); padding:4px 9px; border-radius:7px; font-weight:700;}
 .mapslot .ph-note{position:absolute; left:0; right:0; bottom:0; font-size:11px; color:#274233; background:rgba(243,236,221,.9); padding:7px 10px;}
 
-/* 디바이스 프레임(보고용) */
+/* 앱 셸 — 모바일 우선: 화면에 꽉 차게(프레임·여백 없음) */
 .phone{
-  width:var(--maxw); margin:22px auto; position:relative;
-  border-radius:30px; overflow:hidden; box-shadow:var(--shadow);
-  border:1px solid var(--line); min-height:880px;
+  width:100%; max-width:var(--maxw); margin:0 auto; position:relative;
+  min-height:100vh; min-height:100dvh;
+}
+/* 데스크톱/태블릿 미리보기(보고용)에서는 디바이스 프레임(카드) 복원 */
+@media (min-width:480px){
+  .phone{
+    margin:22px auto; min-height:880px;
+    border-radius:30px; overflow:hidden;
+    box-shadow:var(--shadow); border:1px solid var(--line);
+  }
 }
 .scrim{position:relative;}
 
