@@ -19,7 +19,7 @@ let photoModal = null;      // 사진 상세 모달 { refs, group, label, submis
 const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placeholder(매니페스트 §6 worker2 지정). url 미확정 19곳 노출
 // 히어로 사진 세로 정렬(object-position Y%) — 세로/정방형 사진의 윗부분(머리·지붕·종탑) 잘림 방지. 미지정=50%(중앙).
 //   가로형(비율>1.48) 사진은 세로가 꽉 차 Y값 무관 → 등재 불요. (실측 /tmp/hero_prop.png 시각검증)
-const HERO_POS_Y = { A1: 6, B2: 16, B7: 12, A7: 22, A4: 38, A8: 38, D5: 38 };
+const HERO_POS_Y = { A1: 6, B2: 16, B7: 12, C2: 18, A7: 22, A4: 38, A8: 38, D5: 38 };
 let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
 function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
 

@@ -402,12 +402,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A10.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "광화문광장 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.5726,
