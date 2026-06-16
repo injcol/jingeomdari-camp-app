@@ -17,6 +17,9 @@ let teacherTab = 'queue';   // 교사 탭 queue|camp(전체현황)|board(조별�
 let teacherData = { queue: null, board: null, gallery: null, loading: false, error: null, loaded: false };
 let photoModal = null;      // 사진 상세 모달 { refs, group, label, submissionId, urls }
 const PLACEHOLDER_PHOTO = 'assets/placeholder_place.svg'; // 앱 공통 placeholder(매니페스트 §6 worker2 지정). url 미확정 19곳 노출
+// 히어로 사진 세로 정렬(object-position Y%) — 세로/정방형 사진의 윗부분(머리·지붕·종탑) 잘림 방지. 미지정=50%(중앙).
+//   가로형(비율>1.48) 사진은 세로가 꽉 차 Y값 무관 → 등재 불요. (실측 /tmp/hero_prop.png 시각검증)
+const HERO_POS_Y = { A1: 6, B2: 16, A7: 22, A4: 38, A8: 38, D5: 38 };
 let joining = { code: null, status: 'idle', error: null }; // 조별 링크 자동 입장 상태 idle|pending|done|error
 function resetDraft() { if (draft) draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = { files: [], previews: [], comment: '', uploading: false, progress: 0 }; }
 
@@ -188,7 +191,7 @@ function screenPlace(id) {
   const hasPhoto = p.photo && p.photo.url;
   const hero = el('header', { class: 'hero' }, [
     el('div', { class: 'photo hero-photo' }, hasPhoto
-      ? [el('img', { src: p.photo.url, alt: p.name, style: 'width:100%;height:100%;object-fit:cover' })]
+      ? [el('img', { src: p.photo.url, alt: p.name, style: `width:100%;height:100%;object-fit:cover;object-position:50% ${HERO_POS_Y[id] ?? 50}%` })]
       : [el('img', { src: PLACEHOLDER_PHOTO, alt: `${p.name} 실사진 준비 중`, class: 'ph-img' }),
          el('div', { class: 'ph-tag' }, photoStatusLabel(p))]),
     el('div', { class: 'grad' }),
