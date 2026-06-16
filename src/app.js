@@ -191,7 +191,7 @@ function screenPlace(id) {
   const hasPhoto = p.photo && p.photo.url;
   const hero = el('header', { class: 'hero' }, [
     el('div', { class: 'photo hero-photo' }, hasPhoto
-      ? [el('img', { src: p.photo.url, alt: p.name, style: `width:100%;height:100%;object-fit:cover;object-position:50% ${HERO_POS_Y[id] ?? 50}%` })]
+      ? [el('img', { src: p.photo.url, alt: p.name, style: `position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% ${HERO_POS_Y[id] ?? 50}%` })]
       : [el('img', { src: PLACEHOLDER_PHOTO, alt: `${p.name} 실사진 준비 중`, class: 'ph-img' }),
          el('div', { class: 'ph-tag' }, photoStatusLabel(p))]),
     el('div', { class: 'grad' }),
