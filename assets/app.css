@@ -414,8 +414,8 @@
 .jr-export-note{font-size:12px; color:var(--stone-d); line-height:1.55; text-align:center; margin-top:9px;}
 
 /* 사진 상세 모달 */
-.pm-scrim{position:absolute; inset:0; background:rgba(15,42,40,.6); display:flex; align-items:flex-end; z-index:50;}
-.pm-box{background:var(--paper); width:100%; border-radius:20px 20px 0 0; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); max-height:80%; overflow:auto;}
+.pm-scrim{position:fixed; inset:0; background:rgba(15,42,40,.6); display:flex; align-items:flex-end; justify-content:center; z-index:1000;}
+.pm-box{background:var(--paper); width:100%; max-width:var(--maxw); border-radius:20px 20px 0 0; padding:16px 16px calc(16px + env(safe-area-inset-bottom)); max-height:85vh; overflow:auto;}
 .pm-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
 .pm-head b{font-size:15.5px;}
 .pm-x{width:34px; height:34px; border:none; border-radius:50%; background:rgba(36,30,23,.08); font-size:20px; cursor:pointer;}
