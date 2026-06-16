@@ -41,7 +41,7 @@ export function renderMap(container, fallbackEl, lat, lng, name) {
   });
 }
 
-// 전체지도: 단일 인스턴스에 허브🚩 + 장소 20곳 마커. 조 코스=조 색 강조, 완료=✓.
+// 전체지도: 단일 인스턴스에 허브🚩 + 전체 장소 마커. 조 코스=조 색 강조, 완료=✓.
 // items: [{ id, name, lat, lng, theme, inCourse, done }], hub: { name, lat, lng }, color: 조 색
 export function renderAllMap(container, fallbackEl, items, hub, color) {
   return loadNaverMaps().then((maps) => {

@@ -104,7 +104,7 @@ function buildCrossing(course, nextId) {
   return wrap;
 }
 
-// 홈 협동 배지 — "우리 캠프 함께 N점 · M/20곳". 돌물 진행 시각화와 별개(대체 아님). #/board로 연결.
+// 홈 협동 배지 — "우리 캠프 함께 N점 · M/전체곳". 돌물 진행 시각화와 별개(대체 아님). #/board로 연결.
 function scoreBadge() {
   if (Store.localMode()) {
     return el('a', { href: '#/board', class: 'score-badge tex-stone organic local' }, [
@@ -113,7 +113,7 @@ function scoreBadge() {
     ]);
   }
   const d = campCache.data;
-  const total = d ? d.total_score : 0, covered = d ? d.places_covered : 0, all = d ? d.places_total : 20;
+  const total = d ? d.total_score : 0, covered = d ? d.places_covered : 0, all = d ? d.places_total : Store.seed.places.length;
   return el('a', { href: '#/board', class: 'score-badge tex-stone organic' }, [
     el('div', { class: 'sb-main' }, [el('span', { class: 'sb-pts' }, String(total)), el('span', { class: 'sb-unit' }, '점')]),
     el('div', { class: 'sb-side' }, [
@@ -902,7 +902,7 @@ function screenJoin(code) {
   ])]);
 }
 
-// ── 전체지도 — 20곳 마커(허브 포함 21) 단일 네이버 지도 + 오프라인 장소 리스트 ──
+// ── 전체지도 — 전체 장소 마커(허브 포함) 단일 네이버 지도 + 오프라인 장소 리스트 ──
 function screenAllMap() {
   const courseIds = new Set(Store.course.map((c) => c.placeId));
   const places = Store.seed.places;
@@ -953,7 +953,7 @@ function screenAllMap() {
 function screenBoard() {
   const head = el('div', { class: 'pl-head' }, [
     el('h1', { class: 'display' }, '우리 캠프 현황'),
-    el('p', { class: 'muted' }, '모든 조의 발자취가 모여 캠프 점수가 돼요. 아직 아무도 안 간 곳을 먼저 찾으면 만점! 함께 20곳을 개척해요.'),
+    el('p', { class: 'muted' }, `모든 조의 발자취가 모여 캠프 점수가 돼요. 아직 아무도 안 간 곳을 먼저 찾으면 만점! 함께 ${Store.seed.places.length}곳을 개척해요.`),
   ]);
 
   if (Store.localMode()) {
@@ -978,7 +978,7 @@ function screenBoard() {
 
 // 협동 보드 본문(학생 #/board + 교사 옵저버 현황 탭 공용). myId=null이면 me 하이라이트 없음.
 function campBoardBody(d, myId) {
-  const covered = d.places_covered || 0, all = d.places_total || 20;
+  const covered = d.places_covered || 0, all = d.places_total || Store.seed.places.length;
   const pct = all ? Math.round((covered / all) * 100) : 0;
   const headline = el('div', { class: 'camp-head tex-stone organic' }, [
     el('div', { class: 'ch-main' }, [el('span', { class: 'ch-pts' }, String(d.total_score || 0)), el('span', { class: 'ch-unit' }, '점')]),
