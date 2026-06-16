@@ -77,7 +77,7 @@ export default {
     },
     {
       "placeId": "C3",
-      "name": "전태일기념관+다리",
+      "name": "전태일기념관",
       "themeTags": [
         "history"
       ],

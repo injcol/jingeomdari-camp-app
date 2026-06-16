@@ -20,17 +20,17 @@ const placeName = (pid) => { const p = (seed.places || []).find((x) => x.placeId
 // ── 로컬 데모 목업(세션 영속) — 5조 × 제출/승인/동의 ──
 function freshMock() {
   const groups = [
-    ['g1', '1조', '#1f6f74'], ['g2', '2조', '#b15a37'], ['g3', '3조', '#5d6b39'], ['g4', '4조', '#c79140'], ['g5', '5조', '#175055'],
+    ['g1', '비타민', '#1f6f74'], ['g2', '레벨업', '#b15a37'], ['g3', '큰그림', '#5d6b39'], ['g4', '와이파이', '#c79140'], ['g5', '테스트', '#175055'],
   ];
   const now = Date.now();
   const ago = (min) => new Date(now - min * 60000).toISOString();
   const subs = [
-    { submission_id: 's1', group_id: 'g1', group_name: '1조', mission_id: 'm_B11_1', mission_scope: 'place', place_id: 'B11', photo_refs: ['g1/m_B11_1/0', 'g1/m_B11_1/1'], comment: '연동교회 머릿돌 연도를 찾았어요', status: 'pending', created_at: ago(4), hidden: false },
-    { submission_id: 's2', group_id: 'g3', group_name: '3조', mission_id: 'm_D5_1', mission_scope: 'place', place_id: 'D5', photo_refs: ['g3/m_D5_1/0'], comment: '', status: 'pending', created_at: ago(12), hidden: false },
-    { submission_id: 's3', group_id: 'g2', group_name: '2조', mission_id: 'm_ALL_1', mission_scope: 'course', place_id: null, photo_refs: ['g2/m_ALL_1/0', 'g2/m_ALL_1/1', 'g2/m_ALL_1/2'], comment: '조원 모두 한 컷', status: 'pending', created_at: ago(28), hidden: false },
-    { submission_id: 's4', group_id: 'g1', group_name: '1조', mission_id: 'm_C3_1', mission_scope: 'place', place_id: 'C3', photo_refs: ['g1/m_C3_1/0'], comment: '', status: 'approved', created_at: ago(55), hidden: false },
-    { submission_id: 's5', group_id: 'g4', group_name: '4조', mission_id: 'm_B11_2', mission_scope: 'place', place_id: 'B11', photo_refs: ['g4/m_B11_2/0'], comment: '예배당 내부', status: 'pending', created_at: ago(70), hidden: false },
-    { submission_id: 's6', group_id: 'g3', group_name: '3조', mission_id: 'm_D5_2', mission_scope: 'place', place_id: 'D5', photo_refs: ['g3/m_D5_2/0'], comment: '', status: 'approved', created_at: ago(95), hidden: false },
+    { submission_id: 's1', group_id: 'g1', group_name: '비타민', mission_id: 'm_B11_1', mission_scope: 'place', place_id: 'B11', photo_refs: ['g1/m_B11_1/0', 'g1/m_B11_1/1'], comment: '연동교회 머릿돌 연도를 찾았어요', status: 'pending', created_at: ago(4), hidden: false },
+    { submission_id: 's2', group_id: 'g3', group_name: '큰그림', mission_id: 'm_D5_1', mission_scope: 'place', place_id: 'D5', photo_refs: ['g3/m_D5_1/0'], comment: '', status: 'pending', created_at: ago(12), hidden: false },
+    { submission_id: 's3', group_id: 'g2', group_name: '레벨업', mission_id: 'm_ALL_1', mission_scope: 'course', place_id: null, photo_refs: ['g2/m_ALL_1/0', 'g2/m_ALL_1/1', 'g2/m_ALL_1/2'], comment: '조원 모두 한 컷', status: 'pending', created_at: ago(28), hidden: false },
+    { submission_id: 's4', group_id: 'g1', group_name: '비타민', mission_id: 'm_C3_1', mission_scope: 'place', place_id: 'C3', photo_refs: ['g1/m_C3_1/0'], comment: '', status: 'approved', created_at: ago(55), hidden: false },
+    { submission_id: 's5', group_id: 'g4', group_name: '와이파이', mission_id: 'm_B11_2', mission_scope: 'place', place_id: 'B11', photo_refs: ['g4/m_B11_2/0'], comment: '예배당 내부', status: 'pending', created_at: ago(70), hidden: false },
+    { submission_id: 's6', group_id: 'g3', group_name: '큰그림', mission_id: 'm_D5_2', mission_scope: 'place', place_id: 'D5', photo_refs: ['g3/m_D5_2/0'], comment: '', status: 'approved', created_at: ago(95), hidden: false },
   ];
   const totals = { g1: 6, g2: 5, g3: 7, g4: 5, g5: 4 };
   const checkin = { g1: 4, g2: 2, g3: 5, g4: 1, g5: 0 };

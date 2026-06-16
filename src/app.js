@@ -504,7 +504,7 @@ function screenTeacher() {
   teacherTab = TEACHER_TABS.includes(hint) ? hint : 'queue';
 
   const tabs = el('div', { class: 't-tabs' }, [
-    ['queue', '승인 큐'], ['camp', '전체 현황'], ['board', '조별 현황'], ['photos', '사진'],
+    ['queue', '승인'], ['camp', '전체 현황'], ['board', '조별 현황'], ['photos', '사진'],
   ].map(([k, label]) => {
     const n = k === 'queue' && teacherData.queue ? teacherData.queue.length
       : (k === 'photos' && teacherData.gallery ? teacherData.gallery.length : null);
