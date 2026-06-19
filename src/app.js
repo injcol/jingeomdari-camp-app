@@ -309,7 +309,7 @@ const STATUS_META = {
 function subStatusChip(sub) {
   if (!sub || sub.status === 'idle') return null;
   const m = STATUS_META[sub.status] || STATUS_META.idle;
-  return el('div', { class: `m-status ${m.cls}` }, [el('span', { class: 'dot' }), `${m.k}${sub.status === 'pending' ? ' · 교사 확인 중' : ''}`]);
+  return el('div', { class: `m-status ${m.cls}` }, [el('span', { class: 'dot' }), `${m.k}${sub.status === 'pending' ? ' · 선생님 확인 중' : ''}`]);
 }
 function stepper(status) {
   const cur = (STATUS_META[status] || STATUS_META.idle).step;
@@ -363,7 +363,7 @@ function screenMission(missionId) {
     bodyKids = [
       el('div', { class: 'm-result pending' }, [
         el('div', { class: 'r-ic spin' }, '◷'),
-        el('h2', { class: 'display' }, '교사 선생님 확인 중'),
+        el('h2', { class: 'display' }, '선생님 확인 중'),
         el('p', {}, '제출이 접수됐어요. 승인되면 홈 징검다리에 불이 켜지고 캠프 점수에 반영돼요.'),
         thumbsRow(sub),
         sub.comment ? el('p', { class: 'r-comment' }, `“${sub.comment}”`) : null,
@@ -978,7 +978,7 @@ function screenBoard() {
   const d = campCache.data;
   const body = d ? campBoardBody(d, Store.group.groupId) : el('div', { class: 't-skel' }, '캠프 현황을 불러오는 중…');
   return el('main', { class: 'phone tex-paper col' }, [
-    el('div', { class: 'scroll' }, [head, el('p', { class: 'board-note muted' }, '약 20초마다 자동 갱신 · 제출 즉시 반영(승인 불요)'), body]),
+    el('div', { class: 'scroll' }, [head, el('p', { class: 'board-note muted' }, '약 20초마다 자동 갱신'), body]),
     tabbar('board'),
   ]);
 }
