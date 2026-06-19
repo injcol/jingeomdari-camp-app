@@ -2,7 +2,7 @@
 .phone.col{display:flex; flex-direction:column;}
 /* padding-bottom = 하단 탭바(sticky) 높이 + safe-area → 마지막 요소(예: 코스 '시작하기' 버튼)가
    탭바에 가려지지 않도록 확보. 바디 스크롤 + sticky 탭바 조합의 표준 처리. */
-.scroll{flex:1; overflow-y:auto; overflow-x:clip; padding-bottom:calc(92px + env(safe-area-inset-bottom));}
+.scroll{flex:1; overflow-y:auto; overflow-x:clip; overscroll-behavior-y:contain; -webkit-overflow-scrolling:touch; padding-bottom:calc(92px + env(safe-area-inset-bottom));}
 .grow{flex:1;}
 .pad{padding:22px;}
 .muted{color:#615847; font-size:13.5px; line-height:1.6;}
