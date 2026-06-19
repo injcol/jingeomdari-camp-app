@@ -32,14 +32,15 @@
 /* 자연스러운 문서 흐름(바디 스크롤) — 셸 잠금 제거(iOS 레이아웃 깨짐 방지).
    가로 흔들림은 가로 오버플로를 .phone에서 직접 클립해 해결(아래 .phone 참조). */
 html,body{margin:0; padding:0;}
-html{overflow-x:clip; overscroll-behavior:none;}  /* 끝단 바운스(위아래 흔들림) 억제 — 루트에도 적용 */
+html{height:100%; overflow-x:clip; overscroll-behavior:none;}
+#app{height:100%;}
+/* ★고정 셸(모바일): 바디 스크롤을 잠그고 내부 .scroll 한 곳만 스크롤한다.
+   → 바디가 스크롤되지 않으므로 iOS 주소창이 토글되지 않고(높이 변동 0), 끝단 고무줄 바운스도 없어
+     "위아래 흔들림"이 근본 차단된다. 데스크톱(min-width:480px)에서는 아래에서 페이지 스크롤로 복원. */
 body{
-  width:100%;
-  overflow-x:hidden; overflow-x:clip;   /* 가로 오버플로 차단(clip 우선, hidden 폴백) */
-  overscroll-behavior:none;             /* 세로/가로 끝단 바운스 억제(위아래 흔들림 방지) */
-  /* 높이: svh(소형 뷰포트)=안정값 → 주소창 표시·숨김에도 리사이즈 안 됨(스크롤 중 화면 튐 방지).
-     dvh는 동적이라 스크롤마다 높이가 바뀌어 흔들림 유발 → svh로 교체. */
-  min-height:100vh; min-height:100svh;
+  width:100%; height:100%;
+  overflow:hidden;                      /* 바디 스크롤 잠금(흔들림 제거) */
+  overscroll-behavior:none;
   /* 본문: C 시안 — Gowun Dodum / Noto Sans KR(웹폰트 실패 시 시스템 한글로 폴백). 가독성 우선. */
   font-family:"Gowun Dodum","Noto Sans KR","Apple SD Gothic Neo","Pretendard",sans-serif;
   font-size:17px; color:var(--ink); line-height:1.78;
@@ -102,13 +103,16 @@ body{
    ★가로 흔들림 핵심 수정: 강돌(.cstone 등)이 셸 밖으로 삐져나가는 가로 오버플로를 여기서 클립. */
 .phone{
   width:100%; max-width:var(--maxw); margin:0 auto; position:relative;
-  min-height:100vh; min-height:100svh;   /* 안정 높이(svh) — 주소창 변화에 리사이즈 안 됨 */
-  overflow-x:hidden; overflow-x:clip;   /* 가로 클립(clip 우선, hidden 폴백) */
+  height:100%;                          /* #app(100%) 채움 → 내부 .scroll만 스크롤(고정 셸) */
+  overflow:hidden;                      /* 가로/세로 클립(스크롤은 .scroll 담당) */
+  display:flex; flex-direction:column;  /* .scroll(flex:1) + 탭바 레이아웃 보장 */
 }
-/* 데스크톱/태블릿 미리보기(보고용)에서는 디바이스 프레임(카드) 복원 */
+/* 데스크톱/태블릿 미리보기(보고용): 고정 셸 해제 → 페이지 스크롤 복원 + 디바이스 프레임(카드) */
 @media (min-width:480px){
+  html, body, #app{height:auto;}
+  body{overflow:visible; overflow-x:clip;}
   .phone{
-    min-height:880px; margin:22px auto;
+    height:auto; min-height:880px; margin:22px auto;
     border-radius:30px; overflow:hidden;
     box-shadow:var(--shadow); border:1px solid var(--line);
   }

@@ -176,8 +176,11 @@ function screenHome() {
   ]));
   children.push(el('div', { class: 'grow' }));
   children.push(el('a', { href: '#/teacher', class: 'teacher-link' }, '교사 관리자 →'));
-  children.push(tabbar('home'));
-  return el('main', { class: 'phone tex-paper col' }, children);
+  // 고정 셸 통일: 홈 내용도 .scroll 안으로(바디 잠금 시 잘림 방지). grow로 교사링크 하단 고정 유지.
+  return el('main', { class: 'phone tex-paper col' }, [
+    el('div', { class: 'scroll', style: 'display:flex; flex-direction:column;' }, children),
+    tabbar('home'),
+  ]);
 }
 
 function screenPlace(id) {
