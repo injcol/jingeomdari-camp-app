@@ -41,7 +41,7 @@
 .cstone.future{opacity:.6;}
 
 /* 다음 액션(썸존) */
-.next{display:flex; gap:13px; align-items:center; margin:16px 16px 0; padding:16px; text-decoration:none; color:#f4ecdc;}
+.next{display:flex; gap:13px; align-items:center; margin:16px 16px 0; padding:17px; text-decoration:none; color:#f4ecdc; box-shadow:var(--shadow);}
 .next-ic{width:46px; height:46px; flex:none; display:grid; place-items:center; color:#f4ecdc; font-size:22px;}
 .next-body{flex:1;}
 .next-k{font-size:12px; color:#e6dcc6; font-weight:700; letter-spacing:.08em;}
@@ -57,7 +57,8 @@
 
 /* 빠른 진입 */
 .quick{display:flex; gap:10px; margin:16px 16px 22px;}
-.quick a{flex:1; text-decoration:none; padding:15px 13px;}
+/* C 시안: 둥근 모서리 키우고 말랑 소프트섀도 */
+.quick a{flex:1; text-decoration:none; padding:16px 14px; border-radius:20px; box-shadow:var(--shadow);}
 .quick .q-ic{font-size:20px;}
 .quick .q-t{display:block; margin-top:6px; font-weight:700; font-size:15.5px;}
 .quick .q-d{display:block; font-size:12.5px; margin-top:1px;}
@@ -65,7 +66,8 @@
 .quick .q-light{border:1px solid var(--line); color:var(--ink);} .quick .q-light .q-d{color:var(--stone-d);}
 
 /* ── 장소 상세 (비대칭 매거진) ── */
-.hero{position:relative; height:290px; overflow:hidden;}
+/* C 시안: 히어로 풀블리드 유지 + 하단 종이 프레임 라운드로 정돈 */
+.hero{position:relative; height:290px; overflow:hidden; border-radius:0 0 26px 26px;}
 .hero-photo{position:absolute; inset:0;}
 .hero .grad{position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(0deg, rgba(15,42,40,.9) 0%, rgba(15,42,40,.04) 48%, rgba(15,42,40,.2) 100%);}
@@ -96,19 +98,27 @@
 .route-bar .rb-k{font-size:13px; font-weight:700; color:var(--stone-d); flex:none;}
 .route-bar .rb-btn{flex:1; min-height:50px; padding:13px; font-size:15.5px; text-decoration:none;}
 
-.reading{margin:20px -18px 0; padding:24px 22px 20px; position:relative;}
-.reading::before{content:""; position:absolute; left:22px; top:18px; width:42px; height:3px; background:var(--terra);}
+/* C 시안: 읽을거리 = 종이 지면. 상단 오커 점선 액센트 + 손글씨 제목 오커 밑줄 */
+.reading{margin:20px -18px 0; padding:26px 22px 22px; position:relative;}
+.reading::before{content:""; position:absolute; left:22px; top:18px; width:46px; height:4px; background:var(--terra); border-radius:3px; transform:rotate(-.8deg);}
 .reading .k{font-size:13px; color:var(--moss); letter-spacing:.1em; margin-top:10px;}
-.reading h2{font-size:26px; margin:.15em 0 .5em;}
-.reading p{font-size:16px; line-height:1.7;}
+.reading h2{font-size:29px; margin:.15em 0 .5em; color:var(--river-700); display:inline-block; position:relative;}
+.reading h2::after{content:""; display:block; width:60%; max-width:130px; height:7px; margin-top:3px;
+  background:var(--ocher); opacity:.4; border-radius:4px; transform:rotate(-.8deg);}
+.reading p{font-size:16px; line-height:1.85;}
 
-.mission-wrap{margin:18px 0 0; display:flex; flex-direction:column; gap:10px;}
-.mission-card{padding:16px; color:#f4ecdc;}
+.mission-wrap{margin:18px 0 0; display:flex; flex-direction:column; gap:12px;}
+/* C 시안 미션카드: river 배경 + 오커 배지 + 점선 divider. tex-stone 위에 river로 덮어씀. */
+.mission-card{padding:17px; color:#fdf6e6; background-color:var(--river-700) !important;
+  box-shadow:0 6px 14px -6px rgba(23,80,85,.5);}
 .mission-card .m-head{display:flex; gap:11px; align-items:center;}
-.mission-card .m-ic{width:42px; height:42px; flex:none; display:grid; place-items:center; font-size:21px;}
-.mission-card .m-k{font-size:12px; color:#cfe3df; font-weight:700;}
-.mission-card .m-brief{font-size:14.5px; color:#f3ecdd; margin-top:2px; line-height:1.45;}
-.mission-card .m-note{margin-top:9px; font-size:12.5px; color:var(--ocher);}
+.mission-card .m-ic{width:44px; height:44px; flex:none; display:grid; place-items:center; font-size:21px;
+  background-color:var(--ocher) !important; color:#fff; transform:rotate(-2deg);
+  box-shadow:0 2px 6px rgba(0,0,0,.2);}
+.mission-card .m-k{font-size:12px; color:#ffe8b8; font-weight:700; letter-spacing:.04em;}
+.mission-card .m-brief{font-size:15px; color:#fdf6e6; margin-top:3px; line-height:1.5;}
+.mission-card .m-note{margin-top:11px; padding-top:10px; font-size:12.5px; color:#ffe8b8;
+  border-top:1.5px dashed rgba(253,246,230,.4);}
 
 .checkin{display:flex; width:100%; align-items:center; gap:13px; margin:16px 0 22px; padding:16px 18px;
   border:none; border-radius:14px; background:var(--river-700); color:#f4ecdc; box-shadow:var(--shadow); cursor:pointer; text-align:left; font:inherit;}
@@ -153,8 +163,10 @@
 .filter-bar .chip{cursor:pointer; font-size:13px; min-height:38px; padding:8px 13px;}
 .filter-bar .chip.on{background:var(--river-700); color:#f4ecdc;}
 .pool{padding:8px 16px 0; display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-.pcard{padding:13px; border:1px solid var(--line); display:flex; flex-direction:column; gap:7px;}
-.pcard.added{border-color:var(--moss-bright); box-shadow:0 0 0 1.5px rgba(138,162,74,.4);}
+/* C 시안: 장소카드 둥글게 + 흰 종이 + 말랑 섀도 */
+.pcard{padding:14px; border:1px solid var(--line); display:flex; flex-direction:column; gap:7px;
+  border-radius:18px; background:#fffdf7; box-shadow:var(--shadow);}
+.pcard.added{border-color:var(--moss-bright); box-shadow:0 0 0 1.5px rgba(138,162,74,.45), var(--shadow);}
 .pc-name{font-size:17px;}
 .pc-sub{font-size:11.5px; color:var(--stone-d);}
 .pc-tags{display:flex; flex-wrap:wrap; gap:5px;}
@@ -404,8 +416,14 @@
 .jp-photo.loaded img{width:100%; height:100%; object-fit:cover;}
 .jr-text h2{font-size:25px; margin:.1em 0 .35em;}
 .jr-quote{font-size:16px; line-height:1.6; color:var(--ink-soft); font-style:italic; margin:0 0 .5em;}
-.jr-q{font-size:14px; line-height:1.65; color:var(--stone-d); background:rgba(93,107,57,.07); border-left:3px solid var(--moss); padding:10px 13px; border-radius:0 10px 10px 0;}
-.jr-q .jr-q-k{font-weight:700; color:var(--moss);}
+/* C 시안: 오늘의 질문 = 스티키노트(테이프) */
+.jr-q{font-size:14px; line-height:1.7; color:var(--ink); background:#fef6dd; border-left:5px solid var(--ocher);
+  padding:15px 15px 15px 17px; border-radius:4px; margin-top:6px; position:relative;
+  box-shadow:0 4px 10px -4px rgba(120,90,30,.25); transform:rotate(-.8deg);}
+.jr-q::before{content:""; position:absolute; top:-9px; left:50%; transform:translateX(-50%) rotate(-3deg);
+  width:60px; height:18px; border-radius:1px; box-shadow:0 1px 2px rgba(0,0,0,.1);
+  background:repeating-linear-gradient(45deg, rgba(177,90,55,.7) 0 6px, rgba(177,90,55,.45) 6px 12px);}
+.jr-q .jr-q-k{font-weight:700; color:var(--terra);}
 .jr-cap{font-size:13.5px; color:var(--stone-d); margin:.2em 0;}
 .jr-page.course{background:rgba(31,111,116,.05);}
 .jr-page.v .jr-text h2{color:var(--river-700);}
@@ -428,10 +446,11 @@
 /* ───────── 점수경쟁제(#4) — 홈 배지 · 전체현황 · 장소/플래너 힌트 · 토스트 ───────── */
 /* 홈 점수·순위 배지 (돌물 시각화와 별개 추가) */
 /* R1②: 돌·물 진행 시각화가 메인 — 배지는 tex-stone 반투명 보조 위계(그라디언트 강세 제거) */
-.score-badge{display:flex; align-items:center; gap:14px; margin:6px 16px 0; padding:12px 15px;
-  background:rgba(163,154,139,.20); color:var(--ink); text-decoration:none;
-  border:1px solid var(--line); box-shadow:none;}
-.score-badge.local{background:rgba(163,154,139,.13);}
+/* C 시안: 점수배지 = 오커 스티커 느낌(따뜻한 종이 카드 + 점선) */
+.score-badge{display:flex; align-items:center; gap:14px; margin:6px 16px 0; padding:13px 16px;
+  background:rgba(199,145,64,.12); color:var(--ink); text-decoration:none;
+  border:1.5px dashed rgba(199,145,64,.55); border-radius:18px; box-shadow:0 4px 12px -8px rgba(199,145,64,.5);}
+.score-badge.local{background:rgba(199,145,64,.08);}
 .sb-main{display:flex; align-items:baseline; gap:3px; flex:none;}
 .sb-pts{font-size:28px; font-weight:800; line-height:1; font-family:var(--display,inherit); color:var(--river-700);}
 .sb-unit{font-size:14px; color:var(--stone-d);}

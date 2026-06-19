@@ -1,25 +1,31 @@
 /* 징검다리 여름캠프 — 디자인 토큰 + 질감 시스템
    근거: research/design_direction.md (혼합안 "돌과 강" 질감 × "탐방 저널" 비대칭)
    2026-06-12 개정: ①가독성 상향(본문·버튼 글자↑) ②질감 톤 조정(노이즈 절제) ③네이버지도 슬롯 ④실사진 슬롯(공공누리 출처표시)
+   2026-06-19 리스킨: 승인 시안 "스티커 저널(C)" 룩 적용 (mock_C.html) — 손글씨 제목(Gaegu)·종이톤·말랑 카드·알약 칩·스티커 배지. 기능/클래스/DOM 불변, CSS만.
    AI티 금지: 보라→파랑 그라데이션·글래스모피즘 남용·무국적 플랫·Inter/Roboto 디폴트 전부 배제 */
 
+/* 웹폰트: 손글씨 제목(Gaegu) + 본문(Gowun Dodum / Noto Sans KR). 실패 시 시스템 한글폰트로 자연 폴백. */
+@import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
 :root{
-  /* 강물 (Primary) — 딥 틸/블루그린: 여정·생명·물길 */
+  /* 강물 (Primary) — 딥 틸/블루그린: 여정·생명·물길 (C 시안 --river 정렬) */
   --river-900:#0f3a3d; --river-700:#175055; --river-500:#1f6f74; --river-300:#4f9aa0;
-  /* 돌·징검다리 (Base/Neutral) — 웜 스톤 그레이 / 샌드 / 미색 종이톤 (톤 조정: 살짝 밝게·따뜻하게) */
-  --paper:#f3ecdd; --paper-2:#ebe0ca; --sand:#dac9a8; --stone:#a39a8b; --stone-d:#736a5d;
-  /* 먹·잉크 (텍스트) */
-  --ink:#241e17; --ink-soft:#473d33;
+  /* 돌·징검다리 (Base/Neutral) — C 시안 종이톤(따뜻한 크림)으로 상향 */
+  --paper:#fbf6ea; --paper-2:#f1e7d2; --sand:#e3d3b0; --stone:#b6ab95; --stone-d:#7d7361;
+  /* 먹·잉크 (텍스트) — C 시안 따뜻한 잉크 */
+  --ink:#3b3328; --ink-soft:#6b6151;
   /* 생태 (Accent) — 딥 올리브 ~ 절제된 그린, 포인트 1점 */
   --moss:#5d6b39; --moss-bright:#8aa24a;
   /* 광야·출애굽 (Secondary) — 테라코타/오커 */
   --terra:#b15a37; --ocher:#c79140;
-  /* 라인·그림자 */
-  --line:rgba(36,30,23,.16);
-  --shadow:0 10px 28px -16px rgba(36,30,23,.42);
+  /* 라인·그림자 — 말랑 소프트섀도(C 시안) */
+  --line:rgba(59,51,40,.15);
+  --shadow:0 8px 20px -10px rgba(96,72,40,.34);
 
   --maxw:430px; /* 모바일 우선 캔버스 */
-  --r:14px;
+  --r:18px;     /* 둥근 모서리 키움(C 시안 말랑) */
+  /* 손글씨 디스플레이 폰트(제목용) */
+  --display:'Gaegu','Gowun Dodum','Apple SD Gothic Neo','Noto Sans KR',cursive;
 }
 
 *{box-sizing:border-box;}
@@ -32,22 +38,28 @@ body{
   overflow-x:hidden; overflow-x:clip;   /* 가로 오버플로 차단(clip 우선, hidden 폴백) */
   overscroll-behavior-y:none;            /* 세로 끝단 바운스 억제 */
   min-height:100vh; min-height:100dvh;
-  /* 본문: 가독 한글 산세리프 — Inter/Roboto/system 디폴트 금지. 가독성 상향: base 17px */
-  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
-  font-size:17px; color:var(--ink); line-height:1.72;
+  /* 본문: C 시안 — Gowun Dodum / Noto Sans KR(웹폰트 실패 시 시스템 한글로 폴백). 가독성 우선. */
+  font-family:"Gowun Dodum","Noto Sans KR","Apple SD Gothic Neo","Pretendard",sans-serif;
+  font-size:17px; color:var(--ink); line-height:1.78;
   -webkit-font-smoothing:antialiased;
+  /* 종이톤 배경 + 미세 그레인 도트(C 시안) */
+  background-color:#e6dcc4;
 }
-/* 디스플레이: 묵직한 한글 명조(붓·먹 느낌) — type-as-graphic */
+/* 디스플레이/제목: 손글씨 Gaegu(C 시안). 웹폰트 실패 시 본문폰트로 자연 폴백 → 가독성 유지. */
 .display{
-  font-family:"Nanum Myeongjo","Gowun Batang","AppleMyungjo","Noto Serif KR",serif;
-  font-weight:800; letter-spacing:-.01em; line-height:1.15;
+  font-family:var(--display);
+  font-weight:700; letter-spacing:-.01em; line-height:1.2;
 }
 
 /* ── 질감(톤 조정: 노이즈 opacity 절제로 한층 차분하게) ── */
 .tex-paper{
   background-color:var(--paper);
+  /* C 시안: 따뜻한 도트 그레인 2종 + 미세 종이결 + 기존 노이즈 */
   background-image:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)' opacity='0.045'/></svg>");
+    radial-gradient(circle at 18% 12%, rgba(199,145,64,.05) 0 2px, transparent 2px),
+    radial-gradient(circle at 70% 30%, rgba(177,90,55,.05) 0 2px, transparent 2px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)' opacity='0.04'/></svg>");
+  background-size:22px 22px, 30px 30px, auto;
 }
 .tex-stone{
   background-color:var(--stone);
@@ -62,8 +74,8 @@ body{
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='0.012 0.02' numOctaves='2'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23w)' opacity='0.13'/></svg>");
 }
 
-/* 모서리 살짝 불규칙(매끈한 디지털 디폴트 회피) */
-.organic{border-radius:18px 22px 16px 24px/22px 16px 24px 18px;}
+/* 모서리 살짝 불규칙(매끈한 디지털 디폴트 회피) — C 시안: 더 둥글게·말랑하게 */
+.organic{border-radius:20px 24px 18px 26px/24px 18px 26px 20px;}
 
 /* ── 실사진 슬롯 (SESSION_STATE 5-1: 실제 사진·공공누리 출처표시) ──
    시안=placeholder. 본 구현 시 공공누리 제1유형 사진 삽입(출처·라이선스 필드 의무) */
@@ -103,26 +115,34 @@ body{
 
 /* 하단 탭 (썸존) — 가독성 상향 */
 .tabbar{
-  position:sticky; bottom:0; display:flex; gap:2px;
+  position:sticky; bottom:0; display:flex; gap:4px;
   padding:11px 14px calc(11px + env(safe-area-inset-bottom));
-  background:rgba(243,236,221,.93); backdrop-filter:saturate(1.1) blur(2px);
-  border-top:1px solid var(--line);
+  background:rgba(251,246,234,.94); backdrop-filter:saturate(1.1) blur(2px);
+  border-top:1.5px dashed rgba(199,145,64,.45);  /* C 시안: 점선 종이 가장자리 */
 }
 .tabbar a{flex:1; text-align:center; text-decoration:none; color:var(--stone-d);
-  font-size:13.5px; padding:7px 0; border-radius:10px;}
-.tabbar a.on{color:var(--river-900); font-weight:700; background:rgba(31,111,116,.10);}
+  font-size:13.5px; padding:8px 0; border-radius:16px;}  /* 둥글고 친근하게 */
+.tabbar a.on{color:var(--river-900); font-weight:700; background:rgba(31,111,116,.12);}
 .tabbar .ic{display:block; font-size:21px; line-height:1.2;}
 
-/* 칩·버튼 — 가독성 상향(글자·터치 타깃↑) */
-.chip{display:inline-flex; align-items:center; gap:5px; font-size:13px;
-  padding:5px 11px; border-radius:999px; background:rgba(36,30,23,.06); color:var(--ink-soft);}
-.chip.faith{background:rgba(31,111,116,.12); color:var(--river-900);}
-.chip.history{background:rgba(177,90,55,.14); color:var(--terra);}
-.chip.eco{background:rgba(93,107,57,.16); color:var(--moss);}
+/* 칩 — C 시안: 흰바탕 + 컬러보더 + 앞 도트(알약형). 도트는 ::before로(DOM 불변). */
+.chip{display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:700;
+  padding:5px 12px; border-radius:999px; background:#fff; color:var(--stone-d);
+  border:1.5px solid var(--line);}
+.chip::before{content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--ocher); flex:none;}
+.chip.faith{color:var(--river-700); border-color:var(--river-700);}
+.chip.faith::before{background:var(--river-500);}
+.chip.history{color:var(--terra); border-color:var(--terra);}
+.chip.history::before{background:var(--terra);}
+.chip.eco{color:var(--moss); border-color:var(--moss);}
+.chip.eco::before{background:var(--moss-bright);}
+/* 버튼 — C 시안: 둥글고 친근하게 */
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:7px;
   font:inherit; font-size:16px; font-weight:700; border:none; cursor:pointer;
-  padding:15px 20px; border-radius:14px; background:var(--river-700); color:#fbf6ec;}
-.btn.ghost{background:transparent; color:var(--river-900); border:1.5px solid var(--river-500);}
+  padding:15px 20px; border-radius:18px; background:var(--river-700); color:#fdf6e6;
+  box-shadow:0 5px 12px -6px rgba(23,80,85,.55);}
+.btn.ghost{background:transparent; color:var(--river-900); border:1.5px solid var(--river-500); box-shadow:none;}
 .btn.block{display:flex; width:100%;}
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
