@@ -176,9 +176,10 @@ function screenHome() {
   ]));
   children.push(el('div', { class: 'grow' }));
   children.push(el('a', { href: '#/teacher', class: 'teacher-link' }, '교사 관리자 →'));
-  // 고정 셸 통일: 홈 내용도 .scroll 안으로(바디 잠금 시 잘림 방지). grow로 교사링크 하단 고정 유지.
+  // 고정 셸 통일: 홈 내용도 .scroll(일반 블록)로 감싼다. flex 컬럼으로 두면 항목이 shrink되어
+  // .crossing(절대배치 징검다리) 등이 겹치므로, 다른 화면과 동일하게 블록 스크롤로 둔다.
   return el('main', { class: 'phone tex-paper col' }, [
-    el('div', { class: 'scroll', style: 'display:flex; flex-direction:column;' }, children),
+    el('div', { class: 'scroll' }, children),
     tabbar('home'),
   ]);
 }
