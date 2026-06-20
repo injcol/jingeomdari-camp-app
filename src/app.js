@@ -467,8 +467,17 @@ async function doSubmit(missionId) {
     });
     draft.uploading = false; resetDraft(); render();
   } catch (e) {
-    draft.uploading = false; render();    // queued/실패 상태는 store가 기록 → 화면 갱신
+    draft.uploading = false;
+    if (e && e.serverReject) toast(rejectMsg(e.reason));   // 서버 거부=정확한 사유 안내(오프라인 보류 아님)
+    render();    // queued/실패 상태는 store가 기록 → 화면 갱신
   }
+}
+function rejectMsg(code) {
+  return ({
+    place_not_in_course: '이 장소가 우리 조 코스에 없어요. 먼저 코스에 추가한 뒤 올려 주세요.',
+    invalid_group_code: '조 입장 정보가 만료됐어요. 조 링크로 다시 입장해 주세요.',
+    bad_photo_count: '사진을 1장 이상 선택해 주세요.',
+  })[code] || '아직 제출할 수 없는 미션이에요. 잠시 후 다시 시도하거나 선생님께 문의해 주세요.';
 }
 // R5 #2: 승인 대기 제출 취소 → 철회·재제출 가능.
 async function doCancel(missionId) {

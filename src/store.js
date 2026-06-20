@@ -179,8 +179,19 @@ export const Store = {
       save(); onPhase && onPhase('pending');
       return { status: 'pending' };
     } catch (e) {
-      // 오프라인/실패 → 보류 큐(연결 시 재선택 후 재전송). 사진 blob 미영속 → 큐엔 코멘트만.
-      sub.status = 'queued'; sub.error = String(e.message || e);
+      const msg = String(e.message || e);
+      // 서버가 응답한 거부(HTTP 4xx: 코스 미포함·미등록 미션 등)는 '오프라인 보류'가 아님 →
+      // 큐에 넣지 않고 사유를 표면화, 업로드 화면 유지(재시도 가능). 진짜 네트워크 실패만 queued.
+      const httpm = msg.match(/upload-photo\s+(\d{3}):\s*([\s\S]*)$/);
+      if (httpm) {
+        let code = '';
+        try { code = (JSON.parse(httpm[2]) || {}).error || ''; } catch {}
+        sub.status = 'idle'; sub.error = code || `server_${httpm[1]}`;
+        save();
+        const err = new Error(sub.error); err.serverReject = true; err.reason = sub.error; throw err;
+      }
+      // 오프라인/네트워크 실패 → 보류 큐(연결 시 재선택 후 재전송). 사진 blob 미영속 → 큐엔 코멘트만.
+      sub.status = 'queued'; sub.error = msg;
       save(); onPhase && onPhase('queued');
       throw e;
     }
