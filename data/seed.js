@@ -777,12 +777,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/D6.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "낙원악기상가 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.57279,
@@ -811,12 +811,12 @@ export default {
       "photoFriendly": true,
       "address": null,
       "photo": {
-        "url": null,
-        "source": null,
-        "license": null,
-        "attribution": null,
-        "needsFieldShoot": true,
-        "status": "placeholder"
+        "url": "assets/places/A14.jpg",
+        "source": "현장 촬영",
+        "license": "현장 촬영",
+        "attribution": "돈의문역사관 — 현장 촬영",
+        "needsFieldShoot": false,
+        "status": "confirmed"
       },
       "naverMap": {
         "lat": 37.56921,
