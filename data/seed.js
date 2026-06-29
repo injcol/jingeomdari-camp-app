@@ -259,7 +259,7 @@ export default {
         "routeType": "2transfer",
         "verified": false
       },
-      "basePoints": 50,
+      "basePoints": 110,
       "indoorRaw": "야외",
       "indoor": false,
       "indoorCooled": false,
@@ -701,7 +701,7 @@ export default {
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 40,
+      "basePoints": 90,
       "indoorRaw": "◎(냉방)",
       "indoor": true,
       "indoorCooled": true,
@@ -736,7 +736,7 @@ export default {
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 20,
+      "basePoints": 30,
       "indoorRaw": "○",
       "indoor": true,
       "indoorCooled": false,

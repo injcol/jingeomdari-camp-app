@@ -965,11 +965,11 @@ function screenAllMap() {
   ]);
 }
 
-// ── 전체 현황(#/board) — 협동 보드(#3+#4). 캠프 합계 + 장소별 다녀간 조 + 미개척. 경쟁/순위 없음. ──
+// ── 전체 현황(#/board) — 경쟁 보드. 조별 순위 + 장소 선점 현황(누가 어디를 먼저 차지했나). ──
 function screenBoard() {
   const head = el('div', { class: 'pl-head' }, [
-    el('h1', { class: 'display' }, '우리 캠프 현황'),
-    el('p', { class: 'muted' }, `모든 조의 발자취가 모여 캠프 점수가 돼요. 아직 아무도 안 간 곳을 먼저 찾으면 만점! 함께 ${Store.seed.places.length}곳을 개척해요.`),
+    el('h1', { class: 'display' }, '장소 쟁탈전 🏁'),
+    el('p', { class: 'muted' }, `먼저 도착해 승인받은 조가 그 장소를 선점해요. 늦게 가면 점수는 절반씩! 아직 아무도 없는 ${Store.seed.places.length}곳을 누가 먼저 차지할까요?`),
   ]);
 
   if (Store.localMode()) {
@@ -992,33 +992,78 @@ function screenBoard() {
   ]);
 }
 
-// 협동 보드 본문(학생 #/board + 교사 옵저버 현황 탭 공용). myId=null이면 me 하이라이트 없음.
+// 순위 등수 위첨자(¹²³…) — rank 표기용.
+const RANK_SUP = ['', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
+function supRank(r) { return (r >= 0 && r < RANK_SUP.length) ? RANK_SUP[r] : '^' + r; }
+
+// per_place의 groups를 조별로 points 합산 → 점수 내림차순 정렬. [{group_id,group_name,color,points,places}].
+function rankGroups(d) {
+  const map = new Map();
+  for (const pp of (d.per_place || [])) {
+    for (const g of (pp.groups || [])) {
+      let e = map.get(g.group_id);
+      if (!e) { e = { group_id: g.group_id, group_name: g.group_name, color: g.color || null, points: 0, places: 0 }; map.set(g.group_id, e); }
+      e.points += Number(g.points) || 0;
+      e.places += 1;
+      if (!e.color && g.color) e.color = g.color;
+    }
+  }
+  return [...map.values()].sort((a, b) => (b.points - a.points) || (b.places - a.places) || String(a.group_name).localeCompare(String(b.group_name)));
+}
+
+// 경쟁 보드 본문(학생 #/board + 교사 옵저버 현황 탭 공용). myId=null이면 우리 조 하이라이트 없음.
 function campBoardBody(d, myId) {
   const covered = d.places_covered || 0, all = d.places_total || Store.seed.places.length;
-  const pct = all ? Math.round((covered / all) * 100) : 0;
-  const headline = el('div', { class: 'camp-head tex-stone organic' }, [
-    el('div', { class: 'ch-main' }, [el('span', { class: 'ch-pts' }, String(d.total_score || 0)), el('span', { class: 'ch-unit' }, '점')]),
-    el('div', { class: 'ch-cov' }, `${all}곳 중 ${covered}곳 개척`),
-    el('div', { class: 'ch-track' }, [el('div', { class: 'ch-fill', style: `width:${pct}%` })]),
-  ]);
-  // 장소별: 다녀간 조 배지(순서) / 미개척 강조 (#3). 미개척을 위로.
-  const rows = (d.per_place || []).slice().sort((a, b) => (a.groups.length - b.groups.length) || (b.base_points - a.base_points));
-  const placeList = el('div', { class: 'camp-places' }, rows.map((pp) => {
-    const fresh = (pp.groups || []).length === 0;
-    return el('a', { href: `#/place/${pp.place_id}`, class: `camp-place ${fresh ? 'fresh' : ''}` }, [
+  // ── 조별 순위표(상단): points 합산·내림차순, 상위 5개 조. 우리 조 하이라이트. ──
+  const ranks = rankGroups(d).slice(0, 5);
+  const leader = ranks[0] || null;
+  const cap = el('p', { class: 'board-cap muted' },
+    leader ? `현재 1위 ${leader.group_name} · ${Math.round(leader.points)}점 — ${all}곳 중 ${covered}곳 선점됨`
+           : `아직 선점된 장소가 없어요 — 먼저 가는 조가 1등! (${all}곳 대기 중)`);
+  const rankTable = ranks.length
+    ? el('div', { class: 'rank-table' }, ranks.map((g, i) => {
+        const pos = i + 1;
+        const medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : String(pos);
+        const mine = g.group_id === myId;
+        return el('div', { class: `rank-row ${pos === 1 ? 'lead' : ''} ${mine ? 'me' : ''}` }, [
+          el('span', { class: 'rk-pos' }, medal),
+          el('i', { class: 'rk-dot', style: `--c:${g.color || 'var(--river-500)'}` }),
+          el('span', { class: 'rk-name' }, mine ? `${g.group_name} (우리 조)` : g.group_name),
+          el('span', { class: 'rk-places' }, `${g.places}곳`),
+          el('span', { class: 'rk-pts' }, `${Math.round(g.points)}점`),
+        ]);
+      }))
+    : el('p', { class: 'muted', style: 'margin:0 18px 8px;' }, '아직 점수를 낸 조가 없어요.');
+
+  // ── 장소×조 현황표(하단): base_points 내림차순(고득점 위). 빈 장소 = 선점 기회 강조. ──
+  const places = (d.per_place || []).slice().sort((a, b) => (b.base_points - a.base_points) || String(a.place_id).localeCompare(String(b.place_id)));
+  const maxBase = places.reduce((m, p) => Math.max(m, p.base_points || 0), 0);
+  const placeList = el('div', { class: 'comp-places' }, places.map((pp) => {
+    const groups = pp.groups || [];
+    const open = groups.length === 0;
+    const hot = open && (pp.base_points || 0) >= maxBase && maxBase > 0;   // 고득점 미선점 강조
+    return el('div', { class: `comp-place ${open ? 'open' : ''} ${hot ? 'hot' : ''}` }, [
       el('div', { class: 'cp-top' }, [
-        el('span', { class: 'cp-name' }, pp.name),
-        fresh ? el('span', { class: 'cp-fresh' }, `✨ 미개척 +${pp.base_points}`) : el('span', { class: 'cp-pts' }, `🏅 ${pp.base_points}`),
+        el('a', { href: `#/place/${pp.place_id}`, class: 'cp-name' }, pp.name),
+        el('span', { class: open ? 'cp-fresh' : 'cp-pts' }, open ? `선점 +${pp.base_points}` : `🏅 ${pp.base_points}`),
       ]),
-      fresh
-        ? el('div', { class: 'cp-empty' }, '아직 아무 조도 안 갔어요 — 먼저 가면 만점!')
-        : el('div', { class: 'cp-groups' }, (pp.groups || []).map((g) => el('span', {
-            class: `cp-gchip ${g.group_id === myId ? 'me' : ''}`, style: `--c:${g.color || 'var(--river-500)'}`,
-            title: `${g.group_name} · ${g.rank}번째 · +${g.points}`,
-          }, [el('i', { class: 'cp-gdot' }), `${g.group_name}`]))),
+      open
+        ? el('div', { class: 'cp-empty' }, hot ? '🔥 비어있음 · 고득점 선점 기회!' : '비어있음 · 선점 기회')
+        : el('div', { class: 'cp-groups' }, groups.map((g) => el('span', {
+            class: `cp-gchip ${g.group_id === myId ? 'me' : ''} ${g.rank === 1 ? 'first' : ''}`,
+            style: `--c:${g.color || 'var(--river-500)'}`,
+            title: `${g.group_name} · ${g.rank}등 · +${g.points}`,
+          }, [el('i', { class: 'cp-gdot' }), `${g.group_name}`, el('sup', { class: 'cp-grank' }, supRank(g.rank))]))),
     ]);
   }));
-  return el('div', {}, [headline, el('h2', { class: 'sec' }, '장소별 발자취 · 미개척 먼저'), placeList]);
+
+  return el('div', {}, [
+    cap,
+    el('h2', { class: 'sec' }, '조별 순위'),
+    rankTable,
+    el('h2', { class: 'sec' }, '장소 선점 현황'),
+    placeList,
+  ]);
 }
 
 function stub(title, msg, tab) {

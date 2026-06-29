@@ -525,6 +525,25 @@
 /* 미개척 강조 — 장소 힌트·플래너 칩 */
 .point-hint.fresh{background:linear-gradient(135deg,var(--moss),var(--moss-bright));}
 .pc-pts.fresh{color:var(--moss); font-weight:700;}
+/* ───────── 경쟁 보드(#/board) — 조별 순위 + 장소 선점 현황 ───────── */
+.board-cap{margin:4px 18px 6px; font-size:12.5px;}
+.rank-table{display:flex; flex-direction:column; gap:6px; padding:0 16px 4px;}
+.rank-row{display:flex; align-items:center; gap:10px; padding:10px 13px; border:1px solid var(--line);
+  border-radius:13px; background:rgba(36,30,23,.02);}
+.rank-row.lead{background:linear-gradient(135deg,rgba(199,145,64,.18),rgba(199,145,64,.05)); border-color:#c79140;}
+.rank-row.me{box-shadow:0 0 0 2px var(--river-500) inset; background:rgba(31,111,116,.10);}
+.rk-pos{flex:none; width:24px; text-align:center; font-weight:800; font-size:15px; color:var(--stone-d);}
+.rk-dot{flex:none; width:12px; height:12px; border-radius:50%; background:var(--c,var(--river-500)); box-shadow:0 0 0 1px rgba(0,0,0,.08) inset;}
+.rk-name{flex:1; min-width:0; font-weight:700; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.rk-places{flex:none; font-size:12px; color:var(--stone-d);}
+.rk-pts{flex:none; font-weight:800; font-size:15px; color:var(--river-900); min-width:46px; text-align:right;}
+.comp-places{display:flex; flex-direction:column; gap:8px; padding:0 16px 8px;}
+.comp-place{border:1px solid var(--line); border-radius:13px; background:rgba(36,30,23,.02); padding:11px 13px;}
+.comp-place .cp-name{text-decoration:none; color:var(--ink);}
+.comp-place.open{border-color:var(--moss-bright); background:rgba(138,162,74,.10);}
+.comp-place.hot{border-color:#c79140; background:linear-gradient(135deg,rgba(199,145,64,.16),rgba(199,145,64,.05));}
+.cp-gchip.first{box-shadow:0 0 0 1px var(--c,var(--river-500)) inset;}
+.cp-grank{font-size:9px; font-weight:800; margin-left:1px; opacity:.9; vertical-align:super;}
 /* 교사 모달 실사진 */
 .pm-ph.loaded{padding:0; overflow:hidden;}
 .pm-ph.loaded img{width:100%; height:100%; object-fit:cover; display:block;}
