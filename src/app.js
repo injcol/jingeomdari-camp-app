@@ -718,7 +718,7 @@ function screenPlanner() {
     return el('div', { class: `pl-row ${req ? 'req' : ''}` }, [
       el('span', { class: 'pl-no' }, String(idx + 1)),
       el('div', { class: 'pl-info' }, [
-        el('div', { class: 'pl-name' }, [p ? p.name : placeId, req ? el('span', { class: 'lock' }, ' 🔒 공통필수') : null]),
+        el('div', { class: 'pl-name' }, [p ? el('a', { href: `#/place/${placeId}`, class: 'pl-name-link' }, p.name) : placeId, req ? el('span', { class: 'lock' }, ' 🔒 공통필수') : null]),
         el('div', { class: 'pl-sub' }, p ? `${ROUTE_ICON[p.planner.routeType] || p.planner.routeType} · 허브 ${p.planner.hubMinutes ?? '-'}분 · 체류 ~${p.planner.stayMinutes ?? '-'}분 · 🏅 ${Store.basePointsOf(placeId)}점` : ''),
       ]),
       el('div', { class: 'pl-ctl' }, [
@@ -742,10 +742,12 @@ function screenPlanner() {
     const ppts = Store.basePointsOf(p.placeId), pn = coveredCount(p.placeId);
     const pgain = ppts / Math.pow(2, pn), pgainStr = Number.isInteger(pgain) ? String(pgain) : pgain.toFixed(1);
     return el('div', { class: `pcard tex-paper organic ${added ? 'added' : ''}` }, [
-      el('div', { class: 'pc-name display' }, p.name),
-      el('div', { class: 'pc-sub' }, `${ROUTE_ICON[p.planner.routeType] || ''} · 허브 ${p.planner.hubMinutes ?? '-'}분${p.indoorCooled ? ' · 냉방' : ''}`),
-      el('div', { class: `pc-pts ${pn === 0 ? 'fresh' : ''}` }, pn === 0 ? `✨ 미개척 · 지금 가면 +${pgainStr}점(만점)` : `🏅 ${pn}개 조 다녀감 · 지금 +${pgainStr}점`),
-      el('div', { class: 'pc-tags' }, p.themeTags.map((tg) => el('span', { class: 'chip' }, THEME_LABEL[tg] || tg))),
+      el('a', { href: `#/place/${p.placeId}`, class: 'pc-link' }, [
+        el('div', { class: 'pc-name display' }, [p.name, el('span', { class: 'pc-more' }, ' ›')]),
+        el('div', { class: 'pc-sub' }, `${ROUTE_ICON[p.planner.routeType] || ''} · 허브 ${p.planner.hubMinutes ?? '-'}분${p.indoorCooled ? ' · 냉방' : ''}`),
+        el('div', { class: `pc-pts ${pn === 0 ? 'fresh' : ''}` }, pn === 0 ? `✨ 미개척 · 지금 가면 +${pgainStr}점(만점)` : `🏅 ${pn}개 조 다녀감 · 지금 +${pgainStr}점`),
+        el('div', { class: 'pc-tags' }, p.themeTags.map((tg) => el('span', { class: 'chip' }, THEME_LABEL[tg] || tg))),
+      ]),
       added
         ? el('button', { class: 'btn ghost block', onclick: () => { Store.removePlace(p.placeId); render(); } }, '담음 ✓ (빼기)')
         : el('button', { class: 'btn block', onclick: () => { Store.addPlace(p.placeId); render(); } }, '+ 담기'),
