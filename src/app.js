@@ -434,15 +434,23 @@ function uploadForm(missionId, meta, isRetry) {
     }),
   ]);
   const commentBox = el('textarea', {
-    class: 'cmt', rows: '2', placeholder: '한 줄 기록 (선택) — 무엇을 발견했나요?',
+    class: 'cmt', rows: '3', placeholder: '이곳에서 무엇을 보고 느꼈나요? 새로 알게 된 것, 재미있던 순간을 적어 보세요.',
     oninput: (e) => { draft.comment = e.target.value; },
   });
   commentBox.value = draft.comment;
+  const cmtBlock = el('div', { class: 'cmt-block' }, [
+    el('div', { class: 'cmt-lbl' }, [
+      el('span', { class: 'cmt-ic' }, '✍️'),
+      el('span', { class: 'cmt-t' }, '우리 조 기록'),
+      el('span', { class: 'cmt-hint' }, '발표 슬라이드에 이 글이 실려요'),
+    ]),
+    commentBox,
+  ]);
   const can = draft.files.length > 0;
   return el('div', { class: 'up-form' }, [
     draft.files.length ? previews : el('div', { class: 'up-empty' }, '아직 올린 사진이 없어요.'),
     picker,
-    commentBox,
+    cmtBlock,
     el('button', { class: `btn block submit ${can ? '' : 'off'}`, disabled: can ? null : '', onclick: () => doSubmit(missionId) }, isRetry ? '다시 제출하기' : '제출하기'),
     Store.localMode() ? el('div', { class: 'mode-note' }, '※ 로컬 미리보기 모드 — 실제 업로드/저장은 조 코드 입장 + 온라인에서 작동합니다.') : null,
   ]);
