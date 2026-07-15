@@ -159,23 +159,8 @@ function screenHome() {
     el('a', { href: '#/planner', class: 'tex-stone organic q-dark' }, [el('span', { class: 'q-ic' }, '🗺'), el('span', { class: 'q-t' }, '코스 플래너'), el('span', { class: 'q-d' }, '공통 3곳 + 선택 담기')]),
     el('a', { href: '#/journal', class: 'tex-paper organic q-light' }, [el('span', { class: 'q-ic' }, '📖'), el('span', { class: 'q-t' }, '조별 저널'), el('span', { class: 'q-d' }, '다녀온 사진 수록')]),
   ]));
-  // 코스 미션(장소 비귀속) — 별도 진입
-  const cms = Store.courseMissions();
-  if (cms.length) children.push(el('section', { class: 'cm-sec' }, [
-    el('div', { class: 'cm-k' }, '우리 조 코스 미션'),
-    el('div', { class: 'cm-list' }, cms.map((m) => {
-      const tt = MISSION_TYPE[m.type] || { label: m.type, icon: '•' };
-      const sub = Store.submission(m.missionId);
-      const sm = STATUS_META[sub.status] || STATUS_META.idle;
-      return el('a', { href: `#/mission/${m.missionId}`, class: 'cm-item' }, [
-        el('span', { class: 'cm-ic' }, tt.icon),
-        el('span', { class: 'cm-b' }, [el('b', {}, tt.label), el('small', {}, m.brief || '코스 전체 미션')]),
-        el('span', { class: `cm-st ${sm.cls}` }, sub.status === 'idle' ? '인증하기' : sm.k),
-      ]);
-    })),
-  ]));
+  // 코스 미션·교사 관리자 진입 — 2026-07-15 오너 지시로 삭제.
   children.push(el('div', { class: 'grow' }));
-  children.push(el('a', { href: '#/teacher', class: 'teacher-link' }, '교사 관리자 →'));
   // 고정 셸 통일: 홈 내용도 .scroll(일반 블록)로 감싼다. flex 컬럼으로 두면 항목이 shrink되어
   // .crossing(절대배치 징검다리) 등이 겹치므로, 다른 화면과 동일하게 블록 스크롤로 둔다.
   return el('main', { class: 'phone tex-paper col' }, [

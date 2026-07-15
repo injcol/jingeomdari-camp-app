@@ -18,8 +18,10 @@ const upper = (s) => { const n = (String(s).match(/\d+/g) || []).map(Number); re
 //   ★worker1 확정표(content/base_points_table.md, 2026-06-13 사용자 확정: 양화진50·공통3 유지·공식 그대로) 핀 고정.
 //     확정값을 명시 주입 → hubMinutes 우발 변경에도 점수 불변(검토 없이 점수 이동 방지). 공식과 동일값(검증됨).
 const BASE_POINTS_OVERRIDE = {
-  B11: 10, D5: 10, C3: 20, B6: 15, D3: 10, D4: 15, A5: 10, A7: 25, B1: 25, B2: 25,
-  A2: 25, A10: 25, A1: 25, A8: 25, A4: 25, A6: 25, A3: 30, A9: 30, C2: 35, A15: 50,
+  B11: 10, D5: 10, C3: 20, B6: 15, D4: 15, A5: 10, A7: 25, B1: 25, B2: 25,
+  A2: 25, A10: 25, A1: 25, A8: 25, A4: 25, A3: 30, A9: 30, C2: 35, A15: 150,
+  A11: 25, A12: 35, A13: 100, B7: 30,
+  D6: 15,
 };
 const basePointsFor = (placeId, hubMinutes) =>
   BASE_POINTS_OVERRIDE[placeId] ?? Math.max(10, Math.round((hubMinutes || 0) / 5) * 5);
@@ -52,6 +54,17 @@ const byId = Object.fromEntries(places.map((p) => [p.placeId, p]));
 //    needsFieldShoot=true·url/출처 null → 앱 공통 placeholder 노출. A1=replace(소녀상 대체). 임의 실사진 등재 금지.
 const A5_URL = 'https://www.kogl.or.kr/recommend/recommendView.do?recommendIdx=3120';
 const A5_ATTR = "본 저작물은 한국관광공사에서 공공누리 제1유형으로 개방한 '청계광장'을 이용하였으며, 공공누리(www.kogl.or.kr)에서 무료로 다운로드할 수 있습니다.";
+// 현장 촬영(사용자 제공) 실사진 — 장소별 로컬 에셋(assets/places/<코드>.jpg). 추가 사진은 이름만 등록.
+const FIELD_PHOTO_NAMES = {
+  B11: '연동교회', D5: '광장시장', C3: '전태일기념관', A7: '정동제일교회', B1: '배재학당역사박물관',
+  B2: '이화박물관(심슨기념관)', B6: '승동교회', A15: '양화진선교사묘원', A3: '서대문형무소역사관', A4: '중명전',
+  A2: '대한민국역사박물관', A1: '평화의 소녀상', C2: '이회영기념관', A5: '청계천(청계광장)',
+  A9: '영천시장', D4: '익선동 한옥거리', A8: '교보문고 광화문점',
+  A11: '경교장', A12: '딜쿠샤', A13: '안중근의사기념관', B7: '명동성당', A10: '광화문광장',
+  D6: '낙원악기상가',
+};
+const FIELD_PHOTOS = Object.fromEntries(Object.entries(FIELD_PHOTO_NAMES).map(([id, nm]) =>
+  [id, { url: `assets/places/${id}.jpg`, source: '현장 촬영', license: '현장 촬영', attribution: `${nm} — 현장 촬영` }]));
 for (const line of readFileSync(C('place_data.md'), 'utf8').split('\n')) {
   if (!/^\|\s*[A-D]\d+\s*\|/.test(line)) continue;
   const c = line.split('|').slice(1, -1).map((x) => x.trim());
@@ -59,9 +72,10 @@ for (const line of readFileSync(C('place_data.md'), 'utf8').split('\n')) {
   const [placeId, , lat, lng] = c;
   const p = byId[placeId]; if (!p) continue;
   p.naverMap.lat = Number(lat); p.naverMap.lng = Number(lng);   // 좌표는 유지
-  // 사진: 매니페스트 최종본 권위 — place_data.md의 구 status/license는 무시(원격 미확정 conditional 강등 반영)
-  if (placeId === 'A5') {
-    p.photo = { url: A5_URL, source: '한국관광공사(공공누리 포털)', license: '공공누리 제1유형', attribution: A5_ATTR, needsFieldShoot: false, status: 'confirmed' };
+  // 사진: 현장 촬영(사용자 제공)이 있으면 우선 등재, 없으면 placeholder. (구 A5 KOGL 포털링크는 현장사진으로 대체)
+  if (FIELD_PHOTOS[placeId]) {
+    const f = FIELD_PHOTOS[placeId];
+    p.photo = { url: f.url, source: f.source, license: f.license, attribution: f.attribution, needsFieldShoot: false, status: 'confirmed' };
   } else {
     p.photo = { url: null, source: null, license: null, attribution: null, needsFieldShoot: true, status: placeId === 'A1' ? 'replace' : 'placeholder' };
   }
