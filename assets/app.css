@@ -571,6 +571,57 @@
   * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
 
+/* ───────── 저널 → 16:9 발표 슬라이드 (JOURNAL_SLIDES_spec 2026-07-15 오너 확정) ───────── */
+/* 화면(비인쇄)에선 항상 숨김 — 화면 UI 불변. 인쇄(PDF 저장) 시에만 슬라이드로 출력. */
+.slides-host{ display:none; }
+
+@media print {
+  @page { size:338mm 190mm; margin:0; }        /* 16:9 가로 */
+  #app { display:none !important; }             /* 세로 저널 지면 숨김 — 슬라이드만 출력 */
+  .slides-host{ display:block !important; }
+
+  .slide{
+    box-sizing:border-box; width:338mm; height:190mm; padding:17mm 22mm;
+    page-break-after:always; break-after:page; page-break-inside:avoid; break-inside:avoid;
+    display:flex; flex-direction:column; overflow:hidden;
+    background:var(--paper); color:var(--ink);
+  }
+  .slide:last-child{ page-break-after:auto; break-after:auto; }
+
+  .slide .sl-head{ flex:none; margin-bottom:9mm; }
+  .slide .sl-no{ font-size:15pt; letter-spacing:.14em; color:var(--moss); font-weight:700; margin-bottom:3mm; }
+  .slide .sl-h{ font-size:38pt; line-height:1.12; color:var(--river-900); margin:0; }
+
+  /* 표지 */
+  .s-cover{ align-items:center; justify-content:center; text-align:center;
+    background:linear-gradient(160deg, var(--river-900), var(--river-700)); color:#fdf6e6; }
+  .s-cover .sl-kicker{ font-size:17pt; letter-spacing:.14em; opacity:.85; margin-bottom:11mm; }
+  .s-cover .sl-title{ font-size:62pt; line-height:1.05; margin:0; }
+  .s-cover .sl-cover-sub{ font-size:18pt; margin-top:12mm; opacity:.9; }
+
+  /* 전체 루트 — 다녀온 장소만으로 재구성한 징검다리(buildCrossing allDone), 폭 제한해 중앙 배치.
+     안 간 곳은 buildSlides 단계에서 아예 제외 → 돌·연결선·'지금 여기' 배지 모두 미생성. */
+  .s-route .sl-route-wrap{ flex:1; display:flex; align-items:center; justify-content:center; min-height:0; }
+  .s-route .crossing{ width:170mm; max-width:170mm; margin:0 auto; }
+  .s-route .sl-route-empty{ font-size:19pt; color:var(--stone-d); opacity:.75; }
+
+  /* 장소별 1장 — 사진 + 글 좌우 배치 */
+  .s-place .sl-place-body{ flex:1; display:flex; gap:16mm; align-items:stretch; min-height:0; }
+  .s-place .sl-photo{ flex:1.25; min-width:0; }
+  .s-place .sl-photo .jp-photos{ display:grid; gap:5mm; width:100%; height:100%; grid-auto-rows:1fr; }
+  .s-place .sl-photo .jp-photos.grid{ grid-template-columns:1fr 1fr; }
+  .s-place .sl-photo .jp-photos.full{ grid-template-columns:1fr; }
+  .s-place .sl-photo .jp-photo{ aspect-ratio:auto; height:100%; min-height:0; border-radius:12px; }
+  .s-place .sl-note{ flex:1; min-width:0; display:flex; align-items:center; }
+  .s-place .sl-quote{ font-size:24pt; line-height:1.55; color:var(--ink); margin:0; }
+  .s-place .sl-quote.muted{ color:var(--stone-d); font-size:19pt; }
+
+  /* 빈 슬라이드 — 제목 + 여백(발표 때 채움) */
+  .s-blank .sl-blank-area{ flex:1; display:flex; align-items:center; justify-content:center;
+    border:2px dashed var(--line); border-radius:14px; margin-top:2mm; }
+  .s-blank .sl-blank-hint{ font-size:18pt; color:var(--stone-d); opacity:.7; }
+}
+
 /* R5 교사 사진 갤러리 — 상태 칩 */
 .tc-stat{font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:rgba(36,30,23,.06); color:var(--stone-d);}
 .tc-stat.st-pending{background:rgba(199,144,64,.16); color:#9a6b1f;}

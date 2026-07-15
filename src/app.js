@@ -70,8 +70,11 @@ function tabbar(active) {
 }
 
 // ── 진행률 징검다리: 세로 serpentine. 완료=물 차오름·점등·✓ / 현재=점멸 링·지금여기 / 예정=흐림 ──
-function buildCrossing(course, nextId) {
+function buildCrossing(course, nextId, opts = {}) {
+  // opts.allDone: 저널 발표 루트 슬라이드용 — 전달된 장소를 전부 '다녀온 곳'(done)으로 그린다
+  //   (저널 원칙 '제출=다녀옴'이 홈의 '승인=done'과 달라, 다녀온 장소만 넘겨 진하게 재구성). 홈은 opts 미전달 → 기존 동작 불변.
   const N = course.length;
+  if (!N) return el('div', { class: 'crossing' });   // 방어: 빈 코스(발표 슬라이드 다녀온 곳 0)
   const top = 46, step = 92, H = top + (N - 1) * step + 46;
   const pts = course.map((c, i) => ({ xf: i % 2 === 0 ? 0.30 : 0.70, y: top + i * step, ...c }));
   // SVG 물길(세로 S커브)
@@ -89,7 +92,8 @@ function buildCrossing(course, nextId) {
   wrap.appendChild(el('div', { class: 'river-layer', html: svg }));
   pts.forEach((p) => {
     const place = Store.place(p.placeId);
-    const done = Store.visited(p.placeId); const now = p.placeId === nextId;   // 제출=다녀옴(승인 불요)
+    const done = opts.allDone ? true : Store.visited(p.placeId);
+    const now = opts.allDone ? false : (p.placeId === nextId);   // allDone(발표 루트)이면 now 없음 → '지금 여기' 배지도 미생성
     const fill = done ? 78 : (now ? 32 : 0);
     const stone = el('a', {
       href: `#/place/${p.placeId}`,
@@ -867,11 +871,87 @@ function screenJournal() {
   ]);
 }
 
-// #1 저널 내보내기 — 클릭 시 **동기적으로** window.print() (사용자 제스처 컨텍스트 유지).
-//   ★버그 원인: 이전 async 체인(loadJournalPhotos().then(setTimeout(print))) → print가 제스처 밖에서 호출돼 브라우저가 무시.
-//   사진은 저널 진입 시 이미 로드됨(render의 loadJournalPhotos). @media print가 크롬 숨기고 지면만 출력 → 'PDF로 저장'.
+// ── 저널 → 16:9 발표 슬라이드(인쇄 전용 DOM) — 캠프 후 조별 발표용 (JOURNAL_SLIDES_spec 2026-07-15 오너 확정) ──
+//   구성: 표지 · 전체 루트 · 장소별 1장(다녀온 곳마다) · 빈 3장(발표 때 채움). 장소 수에 따라 동적.
+//   화면(비인쇄) UI는 불변 — .slides-host는 화면에서 display:none, @media print에서만 출력(#app은 인쇄 시 숨김).
+function buildSlides() {
+  const host = el('div', { id: 'slides-print', class: 'slides-host' });
+  const head = (kicker, title) => el('div', { class: 'sl-head' }, [
+    kicker ? el('div', { class: 'sl-no' }, kicker) : null,
+    el('h2', { class: 'sl-h display' }, title),
+  ]);
+
+  // 1. 표지 — "{조이름} 조 · 징검다리 여름캠프 · 우리 조 발표"
+  const crossed = Store.crossedCount();
+  host.appendChild(el('section', { class: 'slide s-cover' }, [
+    el('div', { class: 'sl-inner' }, [
+      el('div', { class: 'sl-kicker' }, '징검다리 여름캠프 · 우리 조 발표'),
+      el('h1', { class: 'sl-title display' }, Store.group.name),
+      el('div', { class: 'sl-cover-sub' }, `${HUB.short}에서 출발한 우리의 하루 · 건넌 징검다리 ${crossed}`),
+    ]),
+  ]));
+
+  // 다녀온 장소(저널 페이지가 생긴 곳=제출 있는 곳) — 루트·장소 슬라이드 공통 소스
+  const places = Store.journal().filter((pg) => pg.scope === 'place');
+
+  // 2. 전체 루트 — 다녀온 장소만으로 징검다리 재구성(제출=다녀옴, 전부 진하게). 안 간 곳은 돌·연결선 모두 제외.
+  const visitedCourse = places.map((pg, i) => ({ placeId: pg.placeId, sortOrder: i }));
+  host.appendChild(el('section', { class: 'slide s-route' }, [
+    head('ROUTE', '우리 조가 다녀온 길'),
+    el('div', { class: 'sl-route-wrap' }, [
+      visitedCourse.length
+        ? buildCrossing(visitedCourse, null, { allDone: true })
+        : el('div', { class: 'sl-route-empty' }, '아직 다녀온 곳이 없어요'),
+    ]),
+  ]));
+
+  // 3~N. 장소별 1장 — Store.journal()의 place 페이지(사진 + 학생이 쓴 글, 한 화면에)
+  places.forEach((pg, i) => {
+    const sub = pg.submission;
+    // 사진: 저널 화면에 이미 로드된 실사진 타일(.jp-photos[data-sub])을 클론 재사용. 없으면 placeholder.
+    let photos = null;
+    if (sub && sub.remoteId) {
+      const onscreen = document.querySelector(`.jp-photos[data-sub="${sub.remoteId}"]`);
+      if (onscreen) photos = onscreen.cloneNode(true);
+    }
+    if (!photos) photos = journalPhotoTiles(sub, false);
+    const name = pg.place ? pg.place.name : pg.placeId;
+    const comment = sub && sub.comment ? sub.comment : '';
+    host.appendChild(el('section', { class: 'slide s-place' }, [
+      head(`${String(i + 1).padStart(2, '0')} · 다녀온 곳`, name),
+      el('div', { class: 'sl-place-body' }, [
+        el('div', { class: 'sl-photo' }, [photos]),
+        el('div', { class: 'sl-note' }, [
+          comment
+            ? el('p', { class: 'sl-quote' }, `“${comment}”`)
+            : el('p', { class: 'sl-quote muted' }, '(우리 조가 쓴 기록)'),
+        ]),
+      ]),
+    ]));
+  });
+
+  // N+1~N+3. 빈 슬라이드 — 제목 + 여백(발표 때 채움)
+  ['가장 마음에 남는 곳과 그 이유', '새로 알게 된 것 · 놀란 것', "우리 조가 찾은 '길'"].forEach((t) => {
+    host.appendChild(el('section', { class: 'slide s-blank' }, [
+      head(null, t),
+      el('div', { class: 'sl-blank-area' }, [el('span', { class: 'sl-blank-hint' }, '발표하며 함께 채워요')]),
+    ]));
+  });
+
+  return host;
+}
+
+// #1 저널 내보내기 — 클릭 시 **동기적으로** 슬라이드 DOM 구성 + window.print() (사용자 제스처 컨텍스트 유지).
+//   ★버그 원인(과거): async 체인 → print가 제스처 밖에서 호출돼 브라우저가 무시. buildSlides는 동기이므로 제스처 유지.
+//   사진은 저널 진입 시 이미 로드됨(render의 loadJournalPhotos) → 클론으로 실사진 재사용. @media print가 크롬 숨기고 슬라이드만 출력.
 function exportJournal() {
-  if (typeof window.print === 'function') window.print();
+  if (typeof window.print !== 'function') return;
+  document.getElementById('slides-print')?.remove();   // 중복 append 방지
+  const host = buildSlides();
+  document.body.appendChild(host);
+  const cleanup = () => { host.remove(); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);       // 인쇄 종료 후 인쇄 전용 DOM 제거(화면 잔존 방지)
+  window.print();
 }
 
 // ── 조별 전용 링크 자동 입장 (#/join/<조코드>) — 학생 타이핑 0 ──
