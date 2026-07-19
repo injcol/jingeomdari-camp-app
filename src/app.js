@@ -755,7 +755,7 @@ function screenPlanner() {
     el('div', { class: 'scroll' }, [
       el('div', { class: 'pl-head' }, [
         el('h1', { class: 'display' }, '코스 플래너'),
-        el('p', { class: 'muted' }, '공통 필수 3곳은 고정, 나머지 17곳에서 우리 조가 직접 골라 순서를 정해요. (추천 예시는 참고일 뿐 자유 수정)'),
+        el('p', { class: 'muted' }, '공통 필수 2곳은 고정, 나머지 18곳에서 우리 조가 직접 골라 순서를 정해요. (추천 예시는 참고일 뿐 자유 수정)'),
         el('div', { class: 'hub-note' }, [el('span', { class: 'hub-ic' }, '🚩'), el('span', {}, [el('b', {}, `${HUB.name}`), ` 출발·복귀 · 최근접 ${HUB.nearestStation}`])]),
       ]),
       el('div', { class: 'sum-bar tex-stone organic' }, [
