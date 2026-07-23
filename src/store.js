@@ -42,7 +42,8 @@ function demoState() {
 }
 
 let state = normalize(load());
-let gen = 0;   // ★조 세대(입장/전환마다 증가) — 느린 이전 조 응답이 새 조 상태에 적용되는 것 방지(세대가드)
+let gen = 0;      // ★조 세대(입장/전환마다 증가) — 느린 이전 조 응답이 새 조 상태에 적용되는 것 방지(세대가드)
+let mutSeq = 0;   // ★로컬 제출 변경 시퀀스 — 오래된 refreshStatus 응답이 갓 성공한 제출을 덮는 것 방지(#8)
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -170,7 +171,7 @@ export const Store = {
       for (let i = 0; i < blobs.length; i++) { onProgress && onProgress((i + 1) / Math.max(1, blobs.length)); sub.photoRefs.push(`local/${missionId}/${i}`); }
       sub.status = 'pending';
       if (scope === 'place' && placeId) this._markProgress(placeId, 'pending');
-      save(); onPhase && onPhase('pending');
+      mutSeq++; save(); onPhase && onPhase('pending');
       return { status: 'pending', local: true };
     }
 
@@ -188,7 +189,7 @@ export const Store = {
       sub.photoRefs = Array.isArray(res.photo_refs) ? res.photo_refs : [];
       sub.status = 'pending';
       if (scope === 'place' && placeId) this._markProgress(placeId, 'pending');
-      save(); onPhase && onPhase('pending');
+      mutSeq++; save(); onPhase && onPhase('pending');
       return { status: 'pending' };
     } catch (e) {
       const msg = String(e.message || e);
@@ -236,6 +237,7 @@ export const Store = {
 
   // R5 #2: 승인 대기(pending/revise) 제출 취소 → 철회·재제출 가능. approved는 거부(서버에서도 차단).
   async cancelSubmission(missionId) {
+    const myGen = gen;
     const sub = state.submissions[missionId];
     if (!sub) return { cancelled: false };
     if (sub.status === 'approved') throw new Error('not_cancellable');
@@ -243,10 +245,11 @@ export const Store = {
       if (!sub.remoteId) throw new Error('no_remote_id');
       await Supabase.rpc('cancel_submission', { p_code: state.groupCode, p_submission_id: sub.remoteId });
     }
+    if (myGen !== gen) return { cancelled: true, superseded: true };  // ★취소 RPC 대기 중 조 전환됨 → 새 조 로컬상태 건드리지 않음(#9)
     delete state.submissions[missionId];
     // ★해당 장소 진행상태를 남은 제출들로 재계산(같은 장소 다른 미션이 살아있으면 유지 — D5 등 복수미션 정합).
     if (sub.scope === 'place' && sub.placeId) this._recomputePlace(sub.placeId);
-    save();
+    mutSeq++; save();
     if (!isLocalMode()) { try { await this.refreshStatus(); } catch {} }
     return { cancelled: true };
   },
@@ -255,8 +258,9 @@ export const Store = {
   async refreshStatus(g) {
     if (isLocalMode()) return;
     const myGen = (g != null) ? g : gen;
+    const myMut = mutSeq;        // ★변경 시퀀스 캡처
     const rows = await Supabase.rpc('get_my_status', { p_code: state.groupCode });
-    if (myGen !== gen) return;   // ★세대 바뀜(조 전환 중 느린 응답) → 폐기(#9)
+    if (myGen !== gen || myMut !== mutSeq) return;   // ★조 전환 or 그 사이 로컬 제출변경 → stale 응답 폐기(#9·#8)
     // ★서버 권위로 제출맵 재구성(승인취소·삭제된 제출 자동 정리). 로컬 진행/보류분은 보존.
     const next = {};
     for (const r of rows || []) {

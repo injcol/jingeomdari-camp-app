@@ -968,7 +968,8 @@ function exportJournal() {
 async function doJoin(code) {
   joining = { code, status: 'pending', error: null }; render();
   try {
-    await Store.joinGroup(code);
+    const g = await Store.joinGroup(code);
+    if (g === null) return;               // ★더 새로운 입장으로 대체됨 → 이 결과 무시(최신 입장이 처리)
     joining = { code, status: 'done', error: null };
     location.hash = '#/';                 // 입장 성공 → 홈
   } catch (e) {
