@@ -45,7 +45,13 @@ let state = normalize(load());
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const v = JSON.parse(raw);
+      // ★손상/형식이상 방어: 필드별 엄격 타입 검사 통과분만 채택(비객체·문자열·배열 등 비정상은 초기상태로 폴백)
+      const isObj = (x) => x != null && typeof x === 'object' && !Array.isArray(x);
+      if (isObj(v) && isObj(v.group) && Array.isArray(v.course) && isObj(v.progress)
+          && (v.submissions == null || isObj(v.submissions))) return v;
+    }
   } catch {}
   // 저장상태 없음 → 데모환경만 더미 진행, 프로덕션은 빈 progress(버그#1: 입장 전 가짜 완료 차단).
   return isDemoEnv() ? demoState() : freshState();
@@ -109,6 +115,7 @@ export const Store = {
     state.groupCode = code;
     state.progress = {};            // ★버그#1: 입장/재입장 시 더미·타조 잔재 0. 서버 권위로만 재구성.
     state.submissions = {};
+    state.course = [...REQUIRED, 'A8'].map((placeId, i) => ({ placeId, sortOrder: i }));  // ★조 전환 코스 오염 방지: 기본코스로 리셋(서버 코스 있으면 loadRemoteCourse가 덮어씀)
     save();
     try { await this.loadRemoteCourse(); } catch {}
     try { await this.refreshStatus(); } catch {}
@@ -141,7 +148,7 @@ export const Store = {
 
   // 제출: 사진 리사이즈 → (production) Storage 업로드 + submit_mission RPC / (로컬) 네트워크 0 모킹.
   // hooks: onPhase(phase), onProgress(0..1). 반환: { status } 또는 throw.
-  async submitMission(missionId, { files = [], comment = '', onPhase, onProgress } = {}) {
+  async submitMission(missionId, { files = [], comment = '', onPhase, onProgress, signal } = {}) {
     const meta = this.missionMeta(missionId);
     if (!meta) throw new Error('unknown_mission');
     const scope = meta.scope, placeId = meta.placeId || null;
@@ -170,7 +177,7 @@ export const Store = {
         photos.push({ content_base64: await blobToBase64(blobs[i]), content_type: blobs[i].type || 'image/jpeg' });
         onProgress && onProgress(((i + 1) / Math.max(1, blobs.length)) * 0.5);   // 인코딩 0→50%
       }
-      const res = await Supabase.uploadViaEdge(state.groupCode, missionId, scope, comment, photos);
+      const res = await Supabase.uploadViaEdge(state.groupCode, missionId, scope, comment, photos, signal);
       onProgress && onProgress(1);                                                // 업로드 완료 100%
       sub.remoteId = res.submission_id;
       sub.photoRefs = Array.isArray(res.photo_refs) ? res.photo_refs : [];
@@ -180,10 +187,21 @@ export const Store = {
       return { status: 'pending' };
     } catch (e) {
       const msg = String(e.message || e);
+      // ★사용자 취소(abort) → idle 복귀(서버 제출 미생성 취급, 중복 방지). 큐잉·거부 아님.
+      if ((signal && signal.aborted) || (e && e.name === 'AbortError')) {
+        sub.status = 'idle'; save();
+        const err = new Error('aborted'); err.aborted = true; throw err;
+      }
       // 서버가 응답한 거부(HTTP 4xx: 코스 미포함·미등록 미션 등)는 '오프라인 보류'가 아님 →
       // 큐에 넣지 않고 사유를 표면화, 업로드 화면 유지(재시도 가능). 진짜 네트워크 실패만 queued.
       const httpm = msg.match(/upload-photo\s+(\d{3}):\s*([\s\S]*)$/);
       if (httpm) {
+        const st = Number(httpm[1]);
+        // ★5xx(일시 서버오류)는 거부가 아니라 재시도 보류 → 큐잉. 4xx만 진짜 거부.
+        if (st >= 500) {
+          sub.status = 'queued'; sub.error = `server_${httpm[1]}`;
+          save(); onPhase && onPhase('queued'); throw e;
+        }
         let code = '';
         try { code = (JSON.parse(httpm[2]) || {}).error || ''; } catch {}
         sub.status = 'idle'; sub.error = code || `server_${httpm[1]}`;
@@ -198,8 +216,17 @@ export const Store = {
   },
   _markProgress(placeId, status) {
     const pr = state.progress[placeId] || { checkedIn: false, status: 'none' };
-    if (!(pr.status === 'approved' && status !== 'approved')) pr.status = status;  // 승인은 강등 안 함
+    if (!(pr.status === 'approved' && status !== 'approved')) pr.status = status;  // 낙관적 표시: 승인은 강등 안 함(refreshStatus가 서버권위로 정정)
     state.progress[placeId] = pr; save();
+  },
+  // ★장소 진행상태를 그 장소 제출들로부터 재계산(승인취소·부분취소 정합). 승인>대기>없음. checkedIn은 보존.
+  _recomputePlace(placeId) {
+    const subs = Object.values(state.submissions).filter((s) => s.scope === 'place' && s.placeId === placeId);
+    let status = 'none';
+    if (subs.some((s) => s.status === 'approved')) status = 'approved';
+    else if (subs.some((s) => s.status === 'pending')) status = 'pending';
+    const pr = state.progress[placeId] || { checkedIn: false, status: 'none' };
+    pr.status = status; state.progress[placeId] = pr;
   },
 
   // R5 #2: 승인 대기(pending/revise) 제출 취소 → 철회·재제출 가능. approved는 거부(서버에서도 차단).
@@ -212,11 +239,8 @@ export const Store = {
       await Supabase.rpc('cancel_submission', { p_code: state.groupCode, p_submission_id: sub.remoteId });
     }
     delete state.submissions[missionId];
-    // 해당 장소가 pending(미승인)이었으면 진행 표시 해제(승인분은 건드리지 않음).
-    if (sub.scope === 'place' && sub.placeId) {
-      const pr = state.progress[sub.placeId];
-      if (pr && pr.status === 'pending') pr.status = 'none';
-    }
+    // ★해당 장소 진행상태를 남은 제출들로 재계산(같은 장소 다른 미션이 살아있으면 유지 — D5 등 복수미션 정합).
+    if (sub.scope === 'place' && sub.placeId) this._recomputePlace(sub.placeId);
     save();
     if (!isLocalMode()) { try { await this.refreshStatus(); } catch {} }
     return { cancelled: true };
@@ -226,20 +250,24 @@ export const Store = {
   async refreshStatus() {
     if (isLocalMode()) return;
     const rows = await Supabase.rpc('get_my_status', { p_code: state.groupCode });
+    // ★서버 권위로 제출맵 재구성(승인취소·삭제된 제출 자동 정리). 서버 미도달 로컬상태만 보존.
+    const next = {};
     for (const r of rows || []) {
       const meta = this.missionMeta(r.mission_id);
       const placeId = meta ? meta.placeId : null;
       const prev = state.submissions[r.mission_id] || {};
-      state.submissions[r.mission_id] = {
+      next[r.mission_id] = {
         status: r.status, scope: r.mission_scope, placeId,
         photoRefs: prev.photoRefs || [], comment: prev.comment || '',
         teacherNote: r.teacher_note || null, remoteId: r.submission_id, createdAt: r.created_at,
       };
-      if (r.mission_scope === 'place' && placeId) {
-        if (r.status === 'approved') this._markProgress(placeId, 'approved');
-        else if (r.status === 'pending') this._markProgress(placeId, 'pending');
-      }
     }
+    for (const [mid, s] of Object.entries(state.submissions)) {
+      if (!next[mid] && (s.status === 'uploading' || s.status === 'queued')) next[mid] = s;  // 아직 서버 미도달분 보존
+    }
+    state.submissions = next;
+    // 장소별 진행상태 = 서버 제출 기준 재계산(승인취소 강등·부분취소 반영)
+    for (const p of seed.places) this._recomputePlace(p.placeId);
     save();
   },
 
@@ -293,11 +321,11 @@ export const Store = {
   //   ★R4 #2: camp_progress는 public(조 불요) → isDemoEnv(네트워크)만 차단. 교사(조코드 없음)도 받음.
   async fetchCampProgress() { if (isDemoEnv()) return null; return Supabase.rpc('camp_progress', {}); },
 
-  // ── 코스 플래너 (D3) — group_course_place 동형. 공통필수 3곳 자동포함·삭제불가·정렬만 ──
+  // ── 코스 플래너 (D3) — group_course_place 동형. 공통필수(REQUIRED) 자동포함·삭제불가·정렬만 ──
   get requiredIds() { return [...REQUIRED]; },
   get recommendedCourses() { return seed.recommendedCourses || []; },
   inCourse(id) { return state.course.some((c) => c.placeId === id); },
-  selectablePlaces() { return seed.places.filter((p) => !REQUIRED.includes(p.placeId)); }, // 17곳
+  selectablePlaces() { return seed.places.filter((p) => !REQUIRED.includes(p.placeId)); }, // 선택 장소(전체-공통필수)
   addPlace(id) {
     if (this.inCourse(id) || !this.place(id)) return;
     const max = state.course.reduce((m, c) => Math.max(m, c.sortOrder), -1);

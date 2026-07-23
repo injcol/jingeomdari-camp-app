@@ -160,7 +160,7 @@ function screenHome() {
     nextCard,
   ];
   children.push(el('nav', { class: 'quick' }, [
-    el('a', { href: '#/planner', class: 'tex-stone organic q-dark' }, [el('span', { class: 'q-ic' }, '🗺'), el('span', { class: 'q-t' }, '코스 플래너'), el('span', { class: 'q-d' }, '공통 3곳 + 선택 담기')]),
+    el('a', { href: '#/planner', class: 'tex-stone organic q-dark' }, [el('span', { class: 'q-ic' }, '🗺'), el('span', { class: 'q-t' }, '코스 플래너'), el('span', { class: 'q-d' }, `공통 ${Store.requiredIds.length}곳 + 선택 담기`)]),
     el('a', { href: '#/journal', class: 'tex-paper organic q-light' }, [el('span', { class: 'q-ic' }, '📖'), el('span', { class: 'q-t' }, '조별 저널'), el('span', { class: 'q-d' }, '다녀온 사진 수록')]),
   ]));
   // 코스 미션·교사 관리자 진입 — 2026-07-15 오너 지시로 삭제.
@@ -451,20 +451,26 @@ function addFiles(fileList) {
 }
 let activeUpload = null;
 function cancelUpload() {
-  if (activeUpload && activeUpload.handle && activeUpload.handle.xhr) try { activeUpload.handle.xhr.abort(); } catch {}
+  if (activeUpload && activeUpload.controller) try { activeUpload.controller.abort(); } catch {}  // ★실제 요청 중단(중복 제출 차단)
   draft.uploading = false; activeUpload = null; render();
 }
 async function doSubmit(missionId) {
-  if (!draft.files.length) return;
+  if (!draft.files.length || draft.uploading) return;   // ★중복 제출 가드(업로드 중 재진입 차단)
+  const controller = new AbortController();
+  const myUpload = { controller };                      // ★이 제출의 고유 토큰(취소·후속 제출과 구분)
+  activeUpload = myUpload;
   draft.uploading = true; draft.progress = 0; render();
   try {
     await Store.submitMission(missionId, {
-      files: draft.files, comment: draft.comment,
-      onProgress: (p) => { draft.progress = p; const bar = document.getElementById('up-bar'); if (bar) bar.style.width = `${Math.round(p * 100)}%`; },
+      files: draft.files, comment: draft.comment, signal: controller.signal,
+      onProgress: (p) => { if (activeUpload !== myUpload) return; draft.progress = p; const bar = document.getElementById('up-bar'); if (bar) bar.style.width = `${Math.round(p * 100)}%`; },
     });
-    draft.uploading = false; resetDraft(); render();
+    if (activeUpload !== myUpload) return;                 // ★취소·후속 제출로 대체됨 → 최신 상태 건드리지 않음
+    draft.uploading = false; activeUpload = null; resetDraft(); render();
   } catch (e) {
-    draft.uploading = false;
+    if (activeUpload !== myUpload) return;                 // ★이 호출은 이미 취소/대체됨 → 무시(전역상태 덮어쓰기·경쟁 방지)
+    draft.uploading = false; activeUpload = null;
+    if (e && e.aborted) { render(); return; }              // ★사용자 취소 → 조용히 종료(중복 제출 방지)
     if (e && e.serverReject) toast(rejectMsg(e.reason));   // 서버 거부=정확한 사유 안내(오프라인 보류 아님)
     render();    // queued/실패 상태는 store가 기록 → 화면 갱신
   }
@@ -730,7 +736,7 @@ function screenPlanner() {
   const recs = el('div', { class: 'rec-chips' }, Store.recommendedCourses.map((rc) =>
     el('button', { class: 'rec-chip', title: rc.flow || '', onclick: () => { Store.applyRecommended(rc.id); render(); } }, [el('b', {}, rc.title), el('span', {}, ` +${rc.placeIds.length}곳`)])));
 
-  // 선택 장소 풀(17곳, 테마 필터)
+  // 선택 장소 풀(전체-공통필수, 테마 필터)
   const pool = Store.selectablePlaces().filter((p) => plannerTheme === 'all' || p.themeTags.includes(plannerTheme));
   const filterBar = el('div', { class: 'filter-bar' }, THEME_FILTERS.map(([k, label]) =>
     el('button', { class: `chip ${plannerTheme === k ? 'on' : ''}`, onclick: () => { plannerTheme = k; render(); } }, label)));
@@ -755,7 +761,7 @@ function screenPlanner() {
     el('div', { class: 'scroll' }, [
       el('div', { class: 'pl-head' }, [
         el('h1', { class: 'display' }, '코스 플래너'),
-        el('p', { class: 'muted' }, '공통 필수 2곳은 고정, 나머지 18곳에서 우리 조가 직접 골라 순서를 정해요. (추천 예시는 참고일 뿐 자유 수정)'),
+        el('p', { class: 'muted' }, `공통 필수 ${Store.requiredIds.length}곳은 고정, 나머지 ${Store.selectablePlaces().length}곳에서 우리 조가 직접 골라 순서를 정해요. (추천 예시는 참고일 뿐 자유 수정)`),
         el('div', { class: 'hub-note' }, [el('span', { class: 'hub-ic' }, '🚩'), el('span', {}, [el('b', {}, `${HUB.name}`), ` 출발·복귀 · 최근접 ${HUB.nearestStation}`])]),
       ]),
       el('div', { class: 'sum-bar tex-stone organic' }, [
@@ -767,7 +773,7 @@ function screenPlanner() {
       el('h2', { class: 'sec' }, '추천 예시 불러오기'),
       el('p', { class: 'rec-note' }, `흐름 추천 — ${HUB.short} 출발 → 연동교회 묵상 → 테마 코스 → 광장시장 식사 → 허브 복귀 (자율 변경 가능)`),
       recs,
-      el('h2', { class: 'sec' }, '선택 장소 담기 (17곳)'),
+      el('h2', { class: 'sec' }, `선택 장소 담기 (${Store.selectablePlaces().length}곳)`),
       filterBar,
       pool.length ? poolGrid : el('p', { class: 'muted pad0' }, '이 테마의 남은 장소가 없어요.'),
       el('button', { class: 'btn block start-btn', onclick: async (e) => {

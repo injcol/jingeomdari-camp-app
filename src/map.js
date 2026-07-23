@@ -19,6 +19,8 @@ export function loadNaverMaps() {
     sc.onerror = () => reject(new Error('script_load_error'));
     document.head.appendChild(sc);
   });
+  // ★실패한 로드 프라미스를 캐시에 남기지 않음 → 네트워크 복구 후 재시도 허용
+  loadPromise.catch(() => { loadPromise = null; });
   return loadPromise;
 }
 

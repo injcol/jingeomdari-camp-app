@@ -48,11 +48,12 @@ export const fetchCourseMissionsPublic = () => selectView('course_mission_public
 // ── Plan B (2026-06-13): 미션 사진 업로드 = service role Edge Function 'upload-photo' ──
 //   배경: storage.objects 정책 깨짐(public. 누락) + 소유권상 수정불가 → anon 직접 Storage POST 전부 403.
 //   대체: resize→base64→upload-photo 1회 호출(서버가 request_upload→storage 업로드→finalize 일괄). 사진 URL 미반환.
-export async function uploadViaEdge(groupCode, missionId, scope, comment, photos) {
+export async function uploadViaEdge(groupCode, missionId, scope, comment, photos, signal) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/upload-photo`, {
     method: 'POST',
     headers: baseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ group_code: groupCode, mission_id: missionId, scope, comment: comment || '', photos }),
+    signal,
   });
   if (!res.ok) throw new Error(`upload-photo ${res.status}: ${await res.text().catch(() => '')}`);
   return res.json();   // { submission_id, status:'pending', photo_refs:[...] }
