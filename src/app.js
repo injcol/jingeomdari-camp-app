@@ -467,12 +467,12 @@ async function doSubmit(missionId) {
   try {
     await Store.submitMission(missionId, {
       files: draft.files, comment: draft.comment, signal: controller.signal,
-      onProgress: (p) => { if (activeUpload !== myUpload) return; draft.progress = p; const bar = document.getElementById('up-bar'); if (bar) bar.style.width = `${Math.round(p * 100)}%`; },
+      onProgress: (p) => { if (activeUpload !== myUpload || !draft) return; draft.progress = p; const bar = document.getElementById('up-bar'); if (bar) bar.style.width = `${Math.round(p * 100)}%`; },
     });
-    if (activeUpload !== myUpload) return;                 // ★취소·후속 제출로 대체됨 → 최신 상태 건드리지 않음
+    if (activeUpload !== myUpload || !draft) return;                 // ★취소·후속 제출로 대체됨 → 최신 상태 건드리지 않음
     draft.uploading = false; activeUpload = null; resetDraft(); render();
   } catch (e) {
-    if (activeUpload !== myUpload) return;                 // ★이 호출은 이미 취소/대체됨 → 무시(전역상태 덮어쓰기·경쟁 방지)
+    if (activeUpload !== myUpload || !draft) return;                 // ★이 호출은 이미 취소/대체됨 → 무시(전역상태 덮어쓰기·경쟁 방지)
     draft.uploading = false; activeUpload = null;
     if (e && e.aborted) { render(); return; }              // ★사용자 취소 → 조용히 종료(중복 제출 방지)
     if (e && e.serverReject) toast(rejectMsg(e.reason));   // 서버 거부=정확한 사유 안내(오프라인 보류 아님)
@@ -1166,7 +1166,11 @@ function render() {
   const mPlace = h.match(/^#\/place\/([A-D]\d+)/);
   const mMission = h.match(/^#\/mission\/(m_[A-Za-z0-9_]+)/);
   const mJoin = h.match(/^#\/join\/([A-Za-z0-9]+)/);
-  if (!mMission && draft) { draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = null; }  // 미션 이탈 시 드래프트 정리
+  if (!mMission && draft) {                                   // 미션 이탈 시 드래프트 정리
+    if (activeUpload && activeUpload.controller) try { activeUpload.controller.abort(); } catch {}  // ★진행 중 업로드 중단(#2 null참조·유령제출 방지)
+    activeUpload = null;
+    draft.previews.forEach((u) => URL.revokeObjectURL(u)); draft = null;
+  }
   if (mJoin) root.appendChild(screenJoin(mJoin[1]));
   else if (mMission) root.appendChild(screenMission(mMission[1]));
   else if (mPlace) { root.appendChild(screenPlace(mPlace[1])); kickCamp(); }

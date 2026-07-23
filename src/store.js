@@ -44,6 +44,7 @@ function demoState() {
 let state = normalize(load());
 let gen = 0;      // ★조 세대(입장/전환마다 증가) — 느린 이전 조 응답이 새 조 상태에 적용되는 것 방지(세대가드)
 let mutSeq = 0;   // ★로컬 제출 변경 시퀀스 — 오래된 refreshStatus 응답이 갓 성공한 제출을 덮는 것 방지(#8)
+let refreshSeq = 0; // ★새로고침 시퀀스 — 응답 역전 시 최신 refreshStatus만 적용(#10)
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -158,6 +159,8 @@ export const Store = {
     const meta = this.missionMeta(missionId);
     if (!meta) throw new Error('unknown_mission');
     const scope = meta.scope, placeId = meta.placeId || null;
+    const myGen = gen;                  // ★조 세대 캡처 — 업로드 중 조 전환 시 새 조 상태 오염 방지(#1)
+    const myCode = state.groupCode;     // ★이 업로드가 속한 조 코드 고정(전환돼도 원래 조로 제출)
     const sub = { status: 'uploading', scope, placeId, photoRefs: [], comment, teacherNote: null, remoteId: null, createdAt: new Date().toISOString() };
     state.submissions[missionId] = sub; save();
     onPhase && onPhase('uploading');     // ①올림
@@ -183,7 +186,8 @@ export const Store = {
         photos.push({ content_base64: await blobToBase64(blobs[i]), content_type: blobs[i].type || 'image/jpeg' });
         onProgress && onProgress(((i + 1) / Math.max(1, blobs.length)) * 0.5);   // 인코딩 0→50%
       }
-      const res = await Supabase.uploadViaEdge(state.groupCode, missionId, scope, comment, photos, signal);
+      const res = await Supabase.uploadViaEdge(myCode, missionId, scope, comment, photos, signal);
+      if (myGen !== gen) { const e = new Error('superseded'); e.aborted = true; throw e; }  // ★조 전환됨 → 새 조 상태 오염 금지(#1)
       onProgress && onProgress(1);                                                // 업로드 완료 100%
       sub.remoteId = res.submission_id;
       sub.photoRefs = Array.isArray(res.photo_refs) ? res.photo_refs : [];
@@ -258,9 +262,10 @@ export const Store = {
   async refreshStatus(g) {
     if (isLocalMode()) return;
     const myGen = (g != null) ? g : gen;
-    const myMut = mutSeq;        // ★변경 시퀀스 캡처
+    const myMut = mutSeq;          // ★변경 시퀀스 캡처
+    const myRs = ++refreshSeq;     // ★새로고침 시퀀스
     const rows = await Supabase.rpc('get_my_status', { p_code: state.groupCode });
-    if (myGen !== gen || myMut !== mutSeq) return;   // ★조 전환 or 그 사이 로컬 제출변경 → stale 응답 폐기(#9·#8)
+    if (myGen !== gen || myMut !== mutSeq || myRs !== refreshSeq) return;   // ★조 전환·로컬 제출변경·더 새 새로고침 → stale 응답 폐기(#9·#8·#10)
     // ★서버 권위로 제출맵 재구성(승인취소·삭제된 제출 자동 정리). 로컬 진행/보류분은 보존.
     const next = {};
     for (const r of rows || []) {

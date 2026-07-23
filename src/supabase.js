@@ -21,12 +21,19 @@ const baseHeaders = (extra = {}) => ({
   ...extra,
 });
 
+// ★네트워크 타임아웃 시그널(무한 대기 방지) — AbortSignal.timeout 우선, 미지원 브라우저 폴백
+function timeoutSignal(ms) {
+  try { if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) return AbortSignal.timeout(ms); } catch {}
+  const c = new AbortController(); setTimeout(() => { try { c.abort(); } catch {} }, ms); return c.signal;
+}
+
 // ── 런타임 RPC (SECURITY DEFINER 함수만 — 테이블 직접 접근 X) ──
 export async function rpc(fn, args = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: 'POST',
     headers: baseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(args),
+    signal: timeoutSignal(25000),   // #11: 25초 타임아웃
   });
   if (!res.ok) throw new Error(`rpc ${fn} → ${res.status}: ${await res.text().catch(() => '')}`);
   return res.status === 204 ? null : res.json();
