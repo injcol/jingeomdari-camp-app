@@ -15,12 +15,12 @@ export default {
       "routeCategory": "required",
       "planner": {
         "stayMinutes": 30,
-        "hubMinutes": 15,
+        "hubMinutes": 2,
         "transferCount": 0,
         "routeType": "walk",
         "verified": true
       },
-      "basePoints": 15,
+      "basePoints": 10,
       "indoorRaw": "부분",
       "indoor": true,
       "indoorCooled": false,
@@ -50,12 +50,12 @@ export default {
       "routeCategory": "required",
       "planner": {
         "stayMinutes": 60,
-        "hubMinutes": 17,
+        "hubMinutes": 8,
         "transferCount": 0,
         "routeType": "walk",
         "verified": true
       },
-      "basePoints": 15,
+      "basePoints": 10,
       "indoorRaw": "부분",
       "indoor": true,
       "indoorCooled": false,
@@ -84,7 +84,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 50,
-        "hubMinutes": 19,
+        "hubMinutes": 18,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
@@ -118,12 +118,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 20,
-        "hubMinutes": 28,
+        "hubMinutes": 24,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
       },
-      "basePoints": 30,
+      "basePoints": 25,
       "indoorRaw": "외관",
       "indoor": false,
       "indoorCooled": false,
@@ -152,12 +152,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 29,
+        "hubMinutes": 24,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
       },
-      "basePoints": 30,
+      "basePoints": 25,
       "indoorRaw": "○",
       "indoor": true,
       "indoorCooled": false,
@@ -186,12 +186,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 30,
-        "hubMinutes": 28,
+        "hubMinutes": 24,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
       },
-      "basePoints": 30,
+      "basePoints": 25,
       "indoorRaw": "○",
       "indoor": true,
       "indoorCooled": false,
@@ -220,12 +220,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 20,
-        "hubMinutes": 18,
+        "hubMinutes": 16,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
       },
-      "basePoints": 20,
+      "basePoints": 15,
       "indoorRaw": "부분",
       "indoor": true,
       "indoorCooled": false,
@@ -254,7 +254,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 60,
-        "hubMinutes": 69,
+        "hubMinutes": 51,
         "transferCount": 2,
         "routeType": "2transfer",
         "verified": false
@@ -288,12 +288,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 90,
-        "hubMinutes": 34,
+        "hubMinutes": 31,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 35,
+      "basePoints": 30,
       "indoorRaw": "○",
       "indoor": true,
       "indoorCooled": false,
@@ -322,7 +322,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 27,
+        "hubMinutes": 26,
         "transferCount": 0,
         "routeType": "noTransfer",
         "verified": false
@@ -356,12 +356,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 90,
-        "hubMinutes": 21,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 20,
+      "basePoints": 25,
       "indoorRaw": "◎(냉방)",
       "indoor": true,
       "indoorCooled": true,
@@ -390,12 +390,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 30,
-        "hubMinutes": 22,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 20,
+      "basePoints": 25,
       "indoorRaw": "야외",
       "indoor": false,
       "indoorCooled": false,
@@ -424,12 +424,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 15,
-        "hubMinutes": 19,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 20,
+      "basePoints": 25,
       "indoorRaw": "야외",
       "indoor": false,
       "indoorCooled": false,
@@ -458,12 +458,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 28,
+        "hubMinutes": 34,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 30,
+      "basePoints": 35,
       "indoorRaw": "○",
       "indoor": true,
       "indoorCooled": false,
@@ -492,12 +492,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 23,
+        "hubMinutes": 8,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
       },
-      "basePoints": 25,
+      "basePoints": 10,
       "indoorRaw": "야외",
       "indoor": false,
       "indoorCooled": false,
@@ -526,7 +526,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 32,
+        "hubMinutes": 31,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -560,7 +560,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 16,
+        "hubMinutes": 15,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
@@ -594,12 +594,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 22,
+        "hubMinutes": 24,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 20,
+      "basePoints": 25,
       "indoorRaw": "◎(냉방)",
       "indoor": true,
       "indoorCooled": true,
@@ -628,7 +628,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 27,
+        "hubMinutes": 26,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
@@ -662,12 +662,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 32,
+        "hubMinutes": 33,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 30,
+      "basePoints": 35,
       "indoorRaw": "○",
       "indoor": true,
       "indoorCooled": false,
@@ -731,12 +731,12 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 30,
-        "hubMinutes": 24,
+        "hubMinutes": 20,
         "transferCount": 1,
         "routeType": "1transfer",
         "verified": false
       },
-      "basePoints": 25,
+      "basePoints": 30,
       "indoorRaw": "○",
       "indoor": true,
       "indoorCooled": false,
@@ -765,7 +765,7 @@ export default {
       "routeCategory": "select",
       "planner": {
         "stayMinutes": 40,
-        "hubMinutes": 17,
+        "hubMinutes": 14,
         "transferCount": 0,
         "routeType": "walk",
         "verified": false
@@ -1224,7 +1224,7 @@ export default {
       ],
       "dir": "시청 무환승",
       "est": "공통3 + 약 3~4시간",
-      "flow": "허브→지하철로 정동 이동→정동길 묶음→연동교회 묵상→광장시장 식사→허브 복귀"
+      "flow": "출발→연동교회 묵상→종로5가역 1호선으로 정동 이동→정동길 묶음→광장시장 식사→HIVE hyehwa 도착"
     },
     {
       "id": "rc_gwanghwamun",
@@ -1238,7 +1238,7 @@ export default {
       ],
       "dir": "종로3가 환승/시청",
       "est": "공통3 + 약 4시간",
-      "flow": "허브→연동교회 묵상→광화문 묶음(냉방거점 역사박물관·교보문고 활용)→경교장(백범 집무실)→광장시장 식사→허브 복귀"
+      "flow": "출발→연동교회 묵상→광화문 묶음(냉방거점 역사박물관·교보문고 활용)→경교장(백범 집무실)→광장시장 식사→HIVE hyehwa 도착"
     },
     {
       "id": "rc_insadong",
@@ -1247,9 +1247,9 @@ export default {
         "B6",
         "D4"
       ],
-      "dir": "종로·인사동 도심",
+      "dir": "출발허브 도보권",
       "est": "공통3 + 약 3시간",
-      "flow": "허브→익선동→승동교회→연동교회 묵상→광장시장 식사→허브"
+      "flow": "출발→연동교회(2분)→광장시장 식사(8분)→익선동→승동교회→HIVE hyehwa 도착"
     },
     {
       "id": "rc_seodaemun",
@@ -1262,7 +1262,7 @@ export default {
       ],
       "dir": "독립문 1환승",
       "est": "공통3 + 약 4~5시간",
-      "flow": "허브→지하철로 서대문 묶음(서대문형무소·딜쿠샤·이회영기념관) 오전 출발→연동교회 묵상→광장시장 식사→허브 복귀"
+      "flow": "출발→연동교회 묵상→종로5가역 1호선 오전 출발(원거리 묶음)→서대문 묶음(서대문형무소·딜쿠샤·이회영기념관)→광장시장 식사→HIVE hyehwa 도착"
     },
     {
       "id": "rc_eco",
@@ -1273,7 +1273,7 @@ export default {
       ],
       "dir": "청계천 도보+합정",
       "est": "공통3 + 약 4시간(양화진 반일)",
-      "flow": "허브→양화진(반일)→청계천 도보 동선→연동교회 묵상→광장시장 식사→허브 복귀"
+      "flow": "출발→연동교회 묵상→청계천 도보 동선→양화진(반일)→광장시장 식사→HIVE hyehwa 도착"
     },
     {
       "id": "rc_myeongdong",
@@ -1284,7 +1284,7 @@ export default {
       ],
       "dir": "명동~남산 도보/케이블카",
       "est": "공통3 + 약 3~4시간",
-      "flow": "허브→연동교회 묵상→명동성당(6월항쟁 성지)→남산 안중근의사기념관(냉방 거점)→광장시장 식사→허브 복귀"
+      "flow": "출발→연동교회 묵상→명동성당(6월항쟁 성지)→남산 안중근의사기념관(냉방 거점)→광장시장 식사→HIVE hyehwa 도착"
     }
   ],
   "readings": [

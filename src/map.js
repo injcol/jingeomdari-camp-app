@@ -43,7 +43,7 @@ export function renderMap(container, fallbackEl, lat, lng, name) {
 
 // 전체지도: 단일 인스턴스에 허브🚩 + 전체 장소 마커. 조 코스=조 색 강조, 완료=✓.
 // items: [{ id, name, lat, lng, theme, inCourse, done }], hub: { name, lat, lng }, color: 조 색
-export function renderAllMap(container, fallbackEl, items, hub, color) {
+export function renderAllMap(container, fallbackEl, items, hub, color, arrival) {
   return loadNaverMaps().then((maps) => {
     if (!container.offsetHeight) {                       // P1 패턴: 0높이 안전망
       const h = (container.parentElement && container.parentElement.offsetHeight) || 360;
@@ -55,9 +55,15 @@ export function renderAllMap(container, fallbackEl, items, hub, color) {
     const iw = new maps.InfoWindow({ borderWidth: 0, disableAnchor: false, backgroundColor: 'transparent', pixelOffset: new maps.Point(0, -6) });
 
     const pin = (cls, label, c) => ({ content: `<div class="mpin ${cls}" style="--c:${c}">${label}</div>`, anchor: new maps.Point(14, 14) });
-    // 허브
-    new maps.Marker({ position: center, map, icon: pin('hub', '🚩', '#175055'), title: hub.name, zIndex: 100 });
+    // 출발 허브
+    new maps.Marker({ position: center, map, icon: pin('hub', '🚩', '#175055'), title: `출발 · ${hub.name}`, zIndex: 100 });
     bounds.extend(center);
+    // 도착(복귀) 허브
+    if (arrival && arrival.lat != null) {
+      const acenter = new maps.LatLng(arrival.lat, arrival.lng);
+      new maps.Marker({ position: acenter, map, icon: pin('hub arrival', '🏁', '#b15a37'), title: `도착 · ${arrival.name}`, zIndex: 100 });
+      bounds.extend(acenter);
+    }
     // 장소
     items.forEach((it) => {
       if (it.lat == null || it.lng == null) return;
