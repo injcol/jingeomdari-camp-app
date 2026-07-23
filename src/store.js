@@ -42,6 +42,7 @@ function demoState() {
 }
 
 let state = normalize(load());
+let gen = 0;   // ★조 세대(입장/전환마다 증가) — 느린 이전 조 응답이 새 조 상태에 적용되는 것 방지(세대가드)
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -108,7 +109,9 @@ export const Store = {
 
   // ── 조별 전용 링크 자동 입장 (#/join/<조코드>) — 학생 타이핑 0 ──
   async joinGroup(code) {
+    const myGen = ++gen;            // ★이 입장의 세대
     const rows = await Supabase.rpc('join_group', { p_code: code });
+    if (myGen !== gen) return null; // 그 사이 다른 입장 발생 → 폐기(stale)
     const g = Array.isArray(rows) ? rows[0] : rows;
     if (!g || !g.group_id) throw new Error('invalid_group_code');
     state.group = { groupId: g.group_id, name: g.name, color: g.color || '#1f6f74' };
@@ -117,12 +120,14 @@ export const Store = {
     state.submissions = {};
     state.course = [...REQUIRED, 'A8'].map((placeId, i) => ({ placeId, sortOrder: i }));  // ★조 전환 코스 오염 방지: 기본코스로 리셋(서버 코스 있으면 loadRemoteCourse가 덮어씀)
     save();
-    try { await this.loadRemoteCourse(); } catch {}
-    try { await this.refreshStatus(); } catch {}
+    try { await this.loadRemoteCourse(myGen); } catch {}
+    try { await this.refreshStatus(myGen); } catch {}
     return g;
   },
-  async loadRemoteCourse() {
+  async loadRemoteCourse(g) {
+    const myGen = (g != null) ? g : gen;
     const rows = await Supabase.rpc('get_my_course', { p_code: state.groupCode });
+    if (myGen !== gen) return;      // ★세대 바뀜(조 전환) → 폐기
     if (Array.isArray(rows) && rows.length) {
       state.course = rows.map((r) => ({ placeId: r.place_id, sortOrder: r.sort_order })); save();
     }
@@ -247,10 +252,12 @@ export const Store = {
   },
 
   // production 상태 동기화: get_my_status RPC → 서버 권위로 submissions/progress 재구성. 로컬모드는 no-op.
-  async refreshStatus() {
+  async refreshStatus(g) {
     if (isLocalMode()) return;
+    const myGen = (g != null) ? g : gen;
     const rows = await Supabase.rpc('get_my_status', { p_code: state.groupCode });
-    // ★서버 권위로 제출맵 재구성(승인취소·삭제된 제출 자동 정리). 서버 미도달 로컬상태만 보존.
+    if (myGen !== gen) return;   // ★세대 바뀜(조 전환 중 느린 응답) → 폐기(#9)
+    // ★서버 권위로 제출맵 재구성(승인취소·삭제된 제출 자동 정리). 로컬 진행/보류분은 보존.
     const next = {};
     for (const r of rows || []) {
       const meta = this.missionMeta(r.mission_id);
@@ -263,7 +270,8 @@ export const Store = {
       };
     }
     for (const [mid, s] of Object.entries(state.submissions)) {
-      if (!next[mid] && (s.status === 'uploading' || s.status === 'queued')) next[mid] = s;  // 아직 서버 미도달분 보존
+      if (s.status === 'uploading') next[mid] = s;                       // ★업로드 진행 중은 서버행보다 로컬 우선(#8 성공결과 유실 방지)
+      else if (!next[mid] && s.status === 'queued') next[mid] = s;       // 아직 서버 미도달 보류분 보존
     }
     state.submissions = next;
     // 장소별 진행상태 = 서버 제출 기준 재계산(승인취소 강등·부분취소 반영)

@@ -445,8 +445,12 @@ function uploadForm(missionId, meta, isRetry) {
   ]);
 }
 
+const MAX_PHOTOS = 8;   // ★업로드 개수 상한 — 대용량 요청·메모리 폭주 방지(동시 다수 사용 부하 완화)
 function addFiles(fileList) {
-  for (const f of fileList) { draft.files.push(f); draft.previews.push(URL.createObjectURL(f)); }
+  for (const f of fileList) {
+    if (draft.files.length >= MAX_PHOTOS) { toast(`사진은 최대 ${MAX_PHOTOS}장까지 올릴 수 있어요`); break; }
+    draft.files.push(f); draft.previews.push(URL.createObjectURL(f));
+  }
   render();
 }
 let activeUpload = null;
