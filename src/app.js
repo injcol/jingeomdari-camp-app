@@ -5,7 +5,7 @@
 import { Store } from './store.js';
 import { Teacher } from './teacher.js';
 import * as Supabase from './supabase.js';   // 교사 사진 모달(#2)·저널 사진 서명 URL 로더. (기존 line~752 참조 누락 import 보강)
-import { el, kakaoRouteUrl, naverSearchUrl, MISSION_TYPE, THEME_LABEL, HUB, ARRIVAL } from './util.js';
+import { el, kakaoRouteUrl, naverSearchUrl, MISSION_TYPE, THEME_LABEL, HUB } from './util.js';
 import { renderMap, renderAllMap } from './map.js';
 
 const app = () => document.getElementById('app');
@@ -756,7 +756,7 @@ function screenPlanner() {
       el('div', { class: 'pl-head' }, [
         el('h1', { class: 'display' }, '코스 플래너'),
         el('p', { class: 'muted' }, '공통 필수 2곳은 고정, 나머지 18곳에서 우리 조가 직접 골라 순서를 정해요. (추천 예시는 참고일 뿐 자유 수정)'),
-        el('div', { class: 'hub-note' }, [el('span', { class: 'hub-ic' }, '🚩'), el('span', {}, [el('b', {}, `${HUB.name}`), ` 출발 · ${HUB.nearestStation}`]), el('span', { class: 'hub-ic' }, ' 🏁'), el('span', {}, [el('b', {}, `${ARRIVAL.name}`), ` 도착 · ${ARRIVAL.nearestStation}`])]),
+        el('div', { class: 'hub-note' }, [el('span', { class: 'hub-ic' }, '🚩'), el('span', {}, [el('b', {}, `${HUB.name}`), ` 출발·복귀 · 최근접 ${HUB.nearestStation}`])]),
       ]),
       el('div', { class: 'sum-bar tex-stone organic' }, [
         el('div', {}, [el('b', {}, `총 ${t.count}곳`), ` · 예상 이동 약 ${t.hub}분 · 체류 약 ${t.stay}분`]),
@@ -765,7 +765,7 @@ function screenPlanner() {
       el('h2', { class: 'sec' }, '우리 조 코스'),
       el('div', { class: 'pl-list' }, rows),
       el('h2', { class: 'sec' }, '추천 예시 불러오기'),
-      el('p', { class: 'rec-note' }, `흐름 추천 — ${HUB.short} 출발 → 연동교회 묵상 → 테마 코스 → 광장시장 식사 → ${ARRIVAL.name} 도착 (자율 변경 가능)`),
+      el('p', { class: 'rec-note' }, `흐름 추천 — ${HUB.short} 출발 → 연동교회 묵상 → 테마 코스 → 광장시장 식사 → 허브 복귀 (자율 변경 가능)`),
       recs,
       el('h2', { class: 'sec' }, '선택 장소 담기 (17곳)'),
       filterBar,
@@ -1191,7 +1191,7 @@ function render() {
         theme: p.themeTags.map((t) => THEME_LABEL[t] || t).join(' · '),
         inCourse: courseIds.has(p.placeId), done: Store.visited(p.placeId),
       }));
-      renderAllMap(c, fb, items, HUB, Store.group.color, ARRIVAL).catch((e) => console.warn('[allmap] fallback:', e.message));
+      renderAllMap(c, fb, items, HUB, Store.group.color).catch((e) => console.warn('[allmap] fallback:', e.message));
     });
   }
 }
